@@ -28,7 +28,7 @@ class Item(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0)
     category = models.CharField(max_length=100, null=True)
     #category = models.ForeignKey(Category, related_name='items', on_delete=models.CASCADE)
-    rating = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)], default=0)
+    rating = models.DecimalField(max_digits=2, decimal_places=1,validators=[MinValueValidator(0), MaxValueValidator(5)], default=0)
     order_count = models.PositiveIntegerField(default=0)
     discount = models.DecimalField(max_digits=3, decimal_places=2, validators=[MinValueValidator(0), MaxValueValidator(1)], default=0)
     price_with_discount = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], default=0, editable=False)
