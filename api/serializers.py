@@ -1,9 +1,16 @@
 from rest_framework import serializers
-from .models import Item
+from .models import Item, Category
 from django.contrib.auth import get_user_model
 
+class CategorySerializer(serializers.ModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name='category-detail', lookup_field='slug')
+
+    class Meta:
+        model = Category
+        fields = '__all__'
 
 class ItemSerializer(serializers.ModelSerializer):
+    categories = CategorySerializer(many=True)
     class Meta:
         model = Item
         fields = '__all__'
