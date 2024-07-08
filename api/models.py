@@ -28,6 +28,7 @@ from unidecode import unidecode
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     slug = AutoSlugField(populate_from='get_slug', unique=True, always_update=True, default='temp-slug')
+    photo = models.ImageField(upload_to='categories/', blank=True)
 
     def get_slug(self):
         return unidecode(self.name)
