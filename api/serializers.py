@@ -4,17 +4,20 @@ from django.contrib.auth import get_user_model
 
 class CategorySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='category-detail', lookup_field='slug')
+    items_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
         fields = '__all__'
 
+    def get_items_url(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(f'/api/categories/{obj.slug}/items/')
+
 class ItemSerializer(serializers.ModelSerializer):
-    categories = CategorySerializer(many=True)
     class Meta:
         model = Item
         fields = '__all__'
-
 
 # User = get_user_model()
 #
