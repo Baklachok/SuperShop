@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Item, Category
+from .models import Item, Category, Photo, Item_Photos
 from django.contrib.auth import get_user_model
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -21,30 +21,14 @@ class ItemSerializer(serializers.ModelSerializer):
         model = Item
         fields = '__all__'
 
+class PhotoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Photo
+        fields = '__all__'
 
-# User = get_user_model()
-#
-#
-# class UserRegistrationSerializer(serializers.ModelSerializer):
-#     password = serializers.CharField(write_only=True)
-#     passwordConfirmation = serializers.CharField(write_only=True)
-#
-#     class Meta:
-#         model = MyUser
-#         fields = ('name', 'telNo', 'password', 'passwordConfirmation')
-#
-#     def validate(self, data):
-#         if data['password'] != data['passwordConfirmation']:
-#             raise serializers.ValidationError("Passwords do not match.")
-#         return data
-#
-#     def create(self, validated_data):
-#         validated_data.pop('passwordConfirmation')
-#         user = User.objects.create_user(
+class ItemPhotoSerializer(serializers.ModelSerializer):
+    photo = PhotoSerializer()
 
-#             name=validated_data['name'],
-
-#             telNo=validated_data['telNo'],
-#             password=validated_data['password']
-#         )
-#         return user
+    class Meta:
+        model = Item_Photos
+        fields = '__all__'

@@ -1,7 +1,10 @@
 from django import forms
 from django.contrib import admin
 
-from api.models import Item, Category
+from api.models import Item, Category, Item_Photos, Photo
+
+admin.site.register(Item_Photos)
+admin.site.register(Photo)
 
 class ItemForm(forms.ModelForm):
     class Meta:
