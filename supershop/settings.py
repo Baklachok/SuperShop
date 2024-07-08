@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'api',
     'corsheaders',
+    'authentication',
 ]
 
 MIDDLEWARE = [
@@ -115,7 +116,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-# AUTH_USER_MODEL = 'api.MyUser'
+AUTHENTICATION_BACKENDS = (
+    'authentication.backends.AdminBackend',
+    'authentication.backends.FrontendBackend',
+)
+
+AUTH_USER_MODEL = 'authentication.AdminUser'
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/

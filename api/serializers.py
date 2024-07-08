@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import Item, Category
 from django.contrib.auth import get_user_model
 
@@ -10,6 +11,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+
     def get_items_url(self, obj):
         request = self.context.get('request')
         return request.build_absolute_uri(f'/api/categories/{obj.slug}/items/')
@@ -18,6 +20,7 @@ class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = '__all__'
+
 
 # User = get_user_model()
 #
@@ -38,7 +41,9 @@ class ItemSerializer(serializers.ModelSerializer):
 #     def create(self, validated_data):
 #         validated_data.pop('passwordConfirmation')
 #         user = User.objects.create_user(
-#             username=validated_data['name'],
+
+#             name=validated_data['name'],
+
 #             telNo=validated_data['telNo'],
 #             password=validated_data['password']
 #         )

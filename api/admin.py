@@ -13,6 +13,7 @@ class ItemForm(forms.ModelForm):
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
+
     form = ItemForm
     list_display = ('name', 'description', 'price',  'rating', 'order_count', 'discount', 'price_with_discount')
     readonly_fields = ('price_with_discount',)
@@ -21,3 +22,4 @@ class ItemAdmin(admin.ModelAdmin):
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name',)
+
