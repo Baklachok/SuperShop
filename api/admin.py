@@ -19,7 +19,7 @@ class ItemAdmin(admin.ModelAdmin):
 
     form = ItemForm
     list_display = ('name', 'description', 'price',  'rating', 'order_count', 'discount', 'price_with_discount')
-    readonly_fields = ('price_with_discount',)
+    readonly_fields = ('price_with_discount', 'general_photo_one', 'general_photo_two',)
     list_filter = ('categories',)
 
 @admin.register(Category)
