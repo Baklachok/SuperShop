@@ -108,3 +108,37 @@ def update_general_photo_flags_before_save(sender, instance, **kwargs):
         if old_instance.general_photo_two and not instance.general_photo_two:
             old_instance.general_photo_two.is_general_two = False
             old_instance.general_photo_two.save(update_fields=['is_general_two'])
+
+@receiver(post_delete, sender=Photo)
+def delete_photo_file(sender, instance, **kwargs):
+    instance.photo.delete(save=False)
+
+@receiver(post_delete, sender=Category)
+def delete_category_photo_file(sender, instance, **kwargs):
+    instance.photo.delete(save=False)
+
+@receiver(pre_save, sender=Photo)
+def delete_old_photo_file(sender, instance, **kwargs):
+    if not instance.pk:
+        return False
+
+    try:
+        old_instance = Photo.objects.get(pk=instance.pk)
+    except Photo.DoesNotExist:
+        return False
+
+    if old_instance.photo and old_instance.photo != instance.photo:
+        old_instance.photo.delete(save=False)
+
+@receiver(pre_save, sender=Category)
+def delete_old_category_photo_file(sender, instance, **kwargs):
+    if not instance.pk:
+        return False
+
+    try:
+        old_instance = Category.objects.get(pk=instance.pk)
+    except Photo.DoesNotExist:
+        return False
+
+    if old_instance.photo and old_instance.photo != instance.photo:
+        old_instance.photo.delete(save=False)
