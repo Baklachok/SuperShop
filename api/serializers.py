@@ -16,11 +16,6 @@ class CategorySerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return request.build_absolute_uri(f'/api/categories/{obj.slug}/items/')
 
-class ItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Item
-        fields = '__all__'
-
 class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Photo
@@ -32,3 +27,18 @@ class ItemPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item_Photos
         fields = '__all__'
+
+class ItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Item
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        request = self.context.get('request', None)
+        if request and request.query_params.get('populate') == 'all_photo':
+            representation['all_photo'] = ItemPhotoSerializer(instance.item_photos.all(), many=True).data
+        else:
+            representation['all_photos'] = list(instance.item_photos.values_list('id', flat=True))
+        return representation
+

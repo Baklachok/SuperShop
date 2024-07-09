@@ -47,6 +47,10 @@ class Item(models.Model):
     def __str__(self):
         return self.name
 
+    @property
+    def all_photos(self):
+        return self.item_photos.all()
+
 class Photo(models.Model):
     name = models.CharField(max_length=100, unique=True)
     photo = models.ImageField(upload_to='item/', blank=True)

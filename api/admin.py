@@ -19,8 +19,11 @@ class ItemAdmin(admin.ModelAdmin):
 
     form = ItemForm
     list_display = ('name', 'description', 'price',  'rating', 'order_count', 'discount', 'price_with_discount')
-    readonly_fields = ('price_with_discount', 'general_photo_one', 'general_photo_two',)
+    readonly_fields = ('price_with_discount', 'general_photo_one', 'general_photo_two', 'all_photos')
     list_filter = ('categories',)
+
+    def all_photos(self, obj):
+        return ", ".join(map(str, obj.item_photos.values_list('photo', flat=True)))
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
