@@ -1,11 +1,9 @@
-from rest_framework import viewsets, generics, status
-from rest_framework.response import Response
+from rest_framework import viewsets
 import logging
 
 
-from api.models import Item, Category
-from api.serializers import ItemSerializer, CategorySerializer
-
+from api.models import Item, Category, Photo
+from api.serializers import ItemSerializer, CategorySerializer, PhotoSerializer
 
 logger = logging.getLogger(__name__)
 class ItemViewSet(viewsets.ModelViewSet):
@@ -22,19 +20,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     lookup_field = 'slug'
 
-
-# class UserRegistrationView(generics.CreateAPIView):
-#     serializer_class = UserRegistrationSerializer
-#
-# # передавать месседж ерор
-#     def create(self, request, *args, **kwargs):
-#         logger.debug(f"Received data: {request.data}")
-#         print("Received data: {request.data}")
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         user = serializer.save()
-#         return Response({
-#             'user': UserRegistrationSerializer(user).data,
-#             'message': 'Registration successful',
-#             'success': True,
-#         }, status=status.HTTP_201_CREATED)
+class PhotoViewSet(viewsets.ModelViewSet):
+    queryset = Photo.objects.all()
+    serializer_class = PhotoSerializer
