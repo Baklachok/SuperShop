@@ -1,7 +1,5 @@
-from django.core.paginator import PageNotAnInteger, EmptyPage, InvalidPage
-from django.http import JsonResponse
-from rest_framework import pagination, status
-from rest_framework.exceptions import NotFound
+from django.core.paginator import InvalidPage
+from rest_framework import pagination
 from rest_framework.response import Response
 
 
