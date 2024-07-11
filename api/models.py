@@ -1,7 +1,7 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.db import models
+from django.db import models, transaction
 from autoslug import AutoSlugField
-from django.db.models.signals import post_delete, post_save, pre_save
+from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from unidecode import unidecode
 
@@ -31,25 +31,48 @@ class Item(models.Model):
                                               validators=[MinValueValidator(0)], default=0,
                                               editable=False)
     general_photo_one = models.OneToOneField('Item_Photos', on_delete=models.SET_NULL,
-                                             related_name='item_general_photo_one',
-                                             limit_choices_to={'is_general_one': True}, blank=True,
+                                             related_name='item_general_photo_one', blank=True,
                                              null=True)
     general_photo_two = models.OneToOneField('Item_Photos', on_delete=models.SET_NULL,
-                                             related_name='item_general_photo_two',
-                                             limit_choices_to={'is_general_two': True}, blank=True,
+                                             related_name='item_general_photo_two', blank=True,
                                              null=True)
     _updating = False
 
     def save(self, *args, **kwargs):
+        self.skip_update = kwargs.pop('skip_update', False)
         self.price_with_discount = self.price * (1 - self.discount)
         super().save(*args, **kwargs)
+        if not self.skip_update:
+            self.update_general_photos()
+
+    def update_general_photos(self):
+        if not self._updating:
+            self._updating = True
+
+            if self.general_photo_one:
+                Item_Photos.objects.filter(item=self, is_general_one=True).exclude(pk=self.general_photo_one.pk).update(is_general_one=False)
+                self.general_photo_one.is_general_one = True
+                self.general_photo_one.save(update_fields=['is_general_one'])
+            else:
+                Item_Photos.objects.filter(item=self, is_general_one=True).update(
+                    is_general_one=False)
+
+            if self.general_photo_two:
+                Item_Photos.objects.filter(item=self, is_general_two=True).exclude(pk=self.general_photo_two.pk).update(is_general_two=False)
+                self.general_photo_two.is_general_two = True
+                self.general_photo_two.save(update_fields=['is_general_two'])
+            else:
+                Item_Photos.objects.filter(item=self, is_general_two=True).update(
+                    is_general_two=False)
+
+            self._updating = False
 
     def __str__(self):
         return self.name
 
     @property
     def all_photos(self):
-        return self.item_photos.all()
+        return ", ".join([photo.photo.name for photo in self.item_photos.all()])
 
 class Photo(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -57,6 +80,7 @@ class Photo(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Item_Photos(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='item_photos')
@@ -66,60 +90,36 @@ class Item_Photos(models.Model):
     _updating = False
 
     def save(self, *args, **kwargs):
-        if not self._updating:
+        update_fields = kwargs.get('update_fields', None)
+
+        if not hasattr(self, '_updating'):
             self._updating = True
 
-            if self.is_general_one:
-                Item_Photos.objects.filter(item=self.item).exclude(pk=self.pk).update(is_general_one=False)
-            if self.is_general_two:
-                Item_Photos.objects.filter(item=self.item).exclude(pk=self.pk).update(is_general_two=False)
+            if update_fields:
+                if 'is_general_one' in update_fields:
+                    if self.is_general_one:
+                        self.item.general_photo_one = self
+                    else:
+                        if self.item.general_photo_one == self:
+                            self.item.general_photo_one = None
+                    self.item.save(update_fields=['general_photo_one'])
 
-            super().save(*args, **kwargs)
+                if 'is_general_two' in update_fields:
+                    if self.is_general_two:
+                        self.item.general_photo_two = self
+                    else:
+                        if self.item.general_photo_two == self:
+                            self.item.general_photo_two = None
+                    self.item.save(update_fields=['general_photo_two'])
 
-            if self.is_general_one:
-                self.item.general_photo_one = self
-            if self.is_general_two:
-                self.item.general_photo_two = self
-
-            else:
-                if not self.is_general_one and self.item.general_photo_one == self:
-                    self.item.general_photo_one = None
-                if not self.is_general_two and self.item.general_photo_two == self:
-                    self.item.general_photo_two = None
-
-            if not self.item._updating:
-                self.item._updating = True
-                self.item.save(update_fields=['general_photo_one', 'general_photo_two'])
-                self.item._updating = False
-
-            self._updating = False
+        super(Item_Photos, self).save(*args, **kwargs)
     def __str__(self):
         return f'{self.item.name} - {self.photo.name}'
 
 @receiver(post_delete, sender=Item_Photos)
 def delete_orphaned_photos(sender, instance, **kwargs):
-    # Delete the photo if it's not referenced by any other Item_Photos
     if not Item_Photos.objects.filter(photo=instance.photo).exists():
         instance.photo.delete()
-
-@receiver(post_save, sender=Item_Photos)
-def update_item_general_photos(sender, instance, created, **kwargs):
-    if not instance.item:
-        return
-
-    if instance.is_general_one:
-        instance.item.general_photo_one = instance
-    else:
-        if instance.item.general_photo_one == instance:
-            instance.item.general_photo_one = None
-
-    if instance.is_general_two:
-        instance.item.general_photo_two = instance
-    else:
-        if instance.item.general_photo_two == instance:
-            instance.item.general_photo_two = None
-
-    instance.item.save(update_fields=['general_photo_one', 'general_photo_two'])
 
 @receiver(post_delete, sender=Item_Photos)
 def clear_item_general_photos(sender, instance, **kwargs):
@@ -167,3 +167,31 @@ def delete_old_category_photo_file(sender, instance, **kwargs):
 
     if old_instance.photo and old_instance.photo != instance.photo:
         old_instance.photo.delete(save=False)
+
+@receiver(pre_save, sender=Item)
+def update_item_general_photos_on_save(sender, instance, **kwargs):
+    with transaction.atomic():
+        old_instance = sender.objects.filter(pk=instance.pk).first()
+
+        if old_instance:
+            if not hasattr(old_instance, '_updating'):
+                old_instance._updating = True
+
+                if old_instance.general_photo_one != instance.general_photo_one:
+                    if old_instance.general_photo_one:
+                        old_instance.general_photo_one.is_general_one = False
+                        old_instance.general_photo_one.save(update_fields=['is_general_one'])
+                    if instance.general_photo_one:
+                        instance.general_photo_one.is_general_one = True
+                        instance.general_photo_one.save(update_fields=['is_general_one'])
+
+
+                if old_instance.general_photo_two != instance.general_photo_two:
+                    if old_instance.general_photo_two:
+                        old_instance.general_photo_two.is_general_two = False
+                        old_instance.general_photo_two.save(update_fields=['is_general_two'])
+                    if instance.general_photo_two:
+                        instance.general_photo_two.is_general_two = True
+                        instance.general_photo_two.save(update_fields=['is_general_two'])
+
+
