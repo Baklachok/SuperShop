@@ -28,6 +28,8 @@ class ItemViewSet(viewsets.ModelViewSet):
             for field in populate.split(','):
                 if field == 'all_photo':
                     queryset = queryset.prefetch_related('item_photos__photo')
+                elif field == 'general_photos':
+                    queryset = queryset.prefetch_related('general_photo_one__photo', 'general_photo_two__photo')
 
         page = self.paginate_queryset(queryset)
         if page is not None:

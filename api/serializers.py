@@ -44,5 +44,12 @@ class ItemSerializer(serializers.ModelSerializer):
             representation['all_photo'] = ItemPhotoSerializer(instance.item_photos.all(), many=True).data
         else:
             representation['all_photos'] = list(instance.item_photos.values_list('id', flat=True))
+
+        if request and request.query_params.get('populate') == 'general_photos':
+            representation['general_photo_one'] = ItemPhotoSerializer(
+                instance.general_photo_one).data if instance.general_photo_one else None
+            representation['general_photo_two'] = ItemPhotoSerializer(
+                instance.general_photo_two).data if instance.general_photo_two else None
+
         return representation
 
