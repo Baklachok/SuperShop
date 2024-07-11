@@ -1,3 +1,4 @@
+
 from rest_framework import viewsets, generics
 import logging
 
@@ -32,8 +33,8 @@ class ItemViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        # serializer = self.get_serializer(queryset, many=True)
+        return Response([])
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
