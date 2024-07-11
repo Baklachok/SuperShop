@@ -1,8 +1,12 @@
 # models.py
 
+
+import jwt
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
-from django.utils import timezone
+import datetime
+
+from supershop import settings
 
 
 class AdminUserManager(BaseUserManager):
@@ -80,12 +84,14 @@ class FrontendUser(AbstractBaseUser, PermissionsMixin):
         verbose_name='user permissions'
     )
     # прочитать про поле
-    # profile_picture = models.ImageField(upload_to='profile_pictures')
-    # тут автоматом надо будет генерировать
+    profile_picture = models.ImageField(upload_to='profile_pictures',default="default.png")
     name = models.CharField(max_length=100, blank=False, null=True)
+    # my_orders
+    # my_favourites
+    # my_comments
+    # my_addresses
     telNo = models.CharField(max_length=100, unique=True)
     is_active = models.BooleanField(default=True)
-    my_addreses = models.JSONField(default=dict)
 
     objects = FrontendUserManager()
 
@@ -93,4 +99,7 @@ class FrontendUser(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     def __str__(self):
+        """ Строковое представление модели (отображается в консоли) """
         return self.telNo
+
+

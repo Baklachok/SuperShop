@@ -23,6 +23,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
 
 
+
 # class UserRegistrationView(generics.CreateAPIView):
 #     serializer_class = UserRegistrationSerializer
 #
