@@ -1,41 +1,65 @@
-from rest_framework import viewsets, generics, status
-from rest_framework.response import Response
+
+from rest_framework import viewsets, generics
 import logging
 
+from rest_framework.response import Response
 
-from api.models import Item, Category
-from api.serializers import ItemSerializer, CategorySerializer
-
+from api.models import Item, Category, Photo
+from api.pagination import CustomPagination
+from api.serializers import ItemSerializer, CategorySerializer, PhotoSerializer
 
 logger = logging.getLogger(__name__)
+
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
+    pagination_class = CustomPagination
     def get_queryset(self):
         category_slug = self.kwargs.get('category_slug')
         if category_slug:
             return self.queryset.filter(categories__slug=category_slug)
         return self.queryset
 
+    def list(self, request, *args, **kwargs):
+        populate = request.query_params.get('populate')
+        queryset = self.get_queryset()
+
+        if populate:
+            for field in populate.split(','):
+                if field == 'all_photo':
+                    queryset = queryset.prefetch_related('item_photos__photo')
+                elif field == 'general_photos':
+                    queryset = queryset.prefetch_related('general_photo_one__photo', 'general_photo_two__photo')
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        # serializer = self.get_serializer(queryset, many=True)
+        return Response([])
+
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     lookup_field = 'slug'
 
+class PhotoViewSet(viewsets.ModelViewSet):
+    queryset = Photo.objects.all()
+    serializer_class = PhotoSerializer
+
+class ItemDetail(generics.RetrieveAPIView):
+    serializer_class = ItemSerializer
+    lookup_field = 'id'
+    lookup_url_kwarg = 'item_id'
+
+    def get_queryset(self):
+        category_slug = self.kwargs['category_slug']
+        return Item.objects.filter(categories__slug=category_slug)
 
 
-# class UserRegistrationView(generics.CreateAPIView):
-#     serializer_class = UserRegistrationSerializer
-#
-# # передавать месседж ерор
-#     def create(self, request, *args, **kwargs):
-#         logger.debug(f"Received data: {request.data}")
-#         print("Received data: {request.data}")
-#         serializer = self.get_serializer(data=request.data)
-#         serializer.is_valid(raise_exception=True)
-#         user = serializer.save()
-#         return Response({
-#             'user': UserRegistrationSerializer(user).data,
-#             'message': 'Registration successful',
-#             'success': True,
-#         }, status=status.HTTP_201_CREATED)
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
