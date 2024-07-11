@@ -57,7 +57,9 @@ class ItemDetail(generics.RetrieveAPIView):
         category_slug = self.kwargs['category_slug']
         return Item.objects.filter(categories__slug=category_slug)
 
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+
