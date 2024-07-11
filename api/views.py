@@ -26,7 +26,8 @@ class ItemViewSet(viewsets.ModelViewSet):
 
         if populate:
             for field in populate.split(','):
-                queryset = queryset.select_related(field)
+                if field == 'all_photo':
+                    queryset = queryset.prefetch_related('item_photos__photo')
 
         page = self.paginate_queryset(queryset)
         if page is not None:
