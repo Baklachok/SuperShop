@@ -27,6 +27,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         user = FrontendUser.objects.create_user(
             telNo=validated_data['telNo'],
             password=validated_data['password'],
+            name=validated_data['name'],
         )
         return user
 
