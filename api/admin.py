@@ -1,26 +1,55 @@
 from django import forms
 from django.contrib import admin
 
+from api.forms import ItemForm
 from api.models import Item, Category, Item_Photos, Photo
 
 admin.site.register(Photo)
 
-class ItemForm(forms.ModelForm):
+class Item_PhotosInlineForm(forms.ModelForm):
     class Meta:
-        model = Item
+        model = Item_Photos
         fields = '__all__'
-        widgets = {
-            'categories': forms.CheckboxSelectMultiple,
-        }
+
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields['photo'].disabled = True
+
+
+class Item_PhotosInline(admin.TabularInline):
+    model = Item_Photos
+    form = Item_PhotosInlineForm
+    extra = 1
+    readonly_fields = ('is_general_one', 'is_general_two')
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "photo":
+            # Получаем форму для текущего инлайна
+            form = self.form(request.POST, request.FILES, instance=kwargs.get('obj', None))
+            if form.fields['photo'].disabled:
+                kwargs["queryset"] = Photo.objects.filter(pk=form.instance.photo.pk)
+            else:
+                item_id = request.resolver_match.kwargs.get('object_id')
+                if item_id:
+                    kwargs["queryset"] = Photo.objects.filter(item_photo__item__id=item_id) | Photo.objects.filter(item_photo__isnull=True)
+                else:
+                    kwargs["queryset"] = Photo.objects.filter(item_photo__isnull=True)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+
+
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
-
     form = ItemForm
     list_display = ('name', 'description', 'price',  'rating','order_count',
                     'discount', 'price_with_discount', 'general_photo_one', 'general_photo_two',)
-    readonly_fields = ('price_with_discount',  'all_photos')
+    readonly_fields = ('price_with_discount', )
     list_filter = ('categories',)
+    inlines = [Item_PhotosInline]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name in ['general_photo_one', 'general_photo_two']:
