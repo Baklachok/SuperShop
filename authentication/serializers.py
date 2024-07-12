@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import FrontendUser
 
@@ -12,6 +12,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         write_only=True
     )
     passwordConfirmation = serializers.CharField(write_only=True)
+
     class Meta:
         model = FrontendUser
         # Перечислить все поля, которые могут быть включены в запрос
@@ -19,11 +20,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ['telNo', 'name', 'password', 'passwordConfirmation']
 
     def validate(self, data):
+        data = super().validate(data)
         if data['password'] != data['passwordConfirmation']:
-
-            # Преобразуйте ошибку "non_field_errors" в "password"
-            raise AuthenticationFailed({'password': "Passwords do not match.",
-                                        'passwordConfirmation': "Passwords do not match."})
+            raise ValidationError({'password': "Passwords do not match.",
+                                   'passwordConfirmation': "Passwords do not match."})
             # raise serializers.ValidationError("Passwords do not match.")
         return data
 
@@ -35,6 +35,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
             name=validated_data['name'],
         )
         return user
+
 
 class MyTokenObtainSerializer(serializers.Serializer):
     telNo = serializers.CharField()

@@ -61,6 +61,19 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',
+]
+
+CORS_EXPOSE_HEADERS = [
+    'Content-Type',
+    'X-CSRF-Token',
+    'Set-Cookie',
+]
+
 ROOT_URLCONF = 'supershop.urls'
 
 TEMPLATES = [

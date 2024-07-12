@@ -85,7 +85,7 @@ class FrontendUser(AbstractBaseUser, PermissionsMixin):
     )
     # прочитать про поле
     profile_picture = models.ImageField(upload_to='profile_pictures',default="default.png")
-    name = models.CharField(max_length=100, blank=False, null=True)
+    name = models.CharField(max_length=100)
     # my_orders
     # my_favourites
     # my_comments
