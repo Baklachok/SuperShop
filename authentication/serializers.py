@@ -11,7 +11,6 @@ class RegistrationSerializer(serializers.ModelSerializer):
         write_only=True
     )
     passwordConfirmation = serializers.CharField(write_only=True)
-
     class Meta:
         model = FrontendUser
         # Перечислить все поля, которые могут быть включены в запрос
@@ -25,11 +24,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('passwordConfirmation')
-        return FrontendUser.objects.create_user(
+        user = FrontendUser.objects.create_user(
             telNo=validated_data['telNo'],
             password=validated_data['password'],
         )
-
+        return user
 
 class MyTokenObtainSerializer(serializers.Serializer):
     telNo = serializers.CharField()
@@ -49,5 +48,5 @@ class MyTokenObtainSerializer(serializers.Serializer):
             else:
                 raise serializers.ValidationError("Unable to log in with provided credentials.")
         else:
-            raise serializers.ValidationError("Must include 'username' and 'password'.")
+            raise serializers.ValidationError("Must include 'username' and 'password")
         return data
