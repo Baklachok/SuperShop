@@ -3,6 +3,9 @@ from django.db import models, transaction
 from autoslug import AutoSlugField
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
+from django import forms
+from django.urls import reverse
+from django.utils.html import format_html
 from unidecode import unidecode
 
 class Category(models.Model):
@@ -72,7 +75,15 @@ class Item(models.Model):
 
     @property
     def all_photos(self):
-        return ", ".join([photo.photo.name for photo in self.item_photos.all()])
+        return format_html(
+            ", ".join([
+                '<a href="{}">{}</a>'.format(
+                    reverse('admin:api_item_photos_change', args=[photo.pk]),
+                    photo.photo.name
+                )
+                for photo in self.item_photos.all()
+            ])
+        )
 
 class Photo(models.Model):
     name = models.CharField(max_length=100, unique=True)
