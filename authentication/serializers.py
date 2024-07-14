@@ -1,8 +1,12 @@
+from datetime import datetime
+
 from django.contrib.auth import authenticate
 from rest_framework import serializers
-from rest_framework.exceptions import AuthenticationFailed, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import FrontendUser
+
+from supershop.settings import SIMPLE_JWT
+from .models import FrontendUser, UserRefreshToken
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -43,13 +47,17 @@ class MyTokenObtainSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-
         telNo = attrs.get('telNo')
         password = attrs.get('password')
         if telNo and password:
             user = authenticate(username=telNo, password=password)
             if user:
                 refresh = RefreshToken.for_user(user)
+                UserRefreshToken.objects.create(
+                    user=user,
+                    token=str(refresh),
+                    expires_at=datetime.now() + SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
+                )
                 data['refresh'] = str(refresh)
                 data['access'] = str(refresh.access_token)
                 return data

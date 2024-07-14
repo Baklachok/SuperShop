@@ -84,7 +84,7 @@ class FrontendUser(AbstractBaseUser, PermissionsMixin):
         verbose_name='user permissions'
     )
     # прочитать про поле
-    profile_picture = models.ImageField(upload_to='profile_pictures',default="default.png")
+    profile_picture = models.ImageField(upload_to='profile_pictures', default="default.png")
     name = models.CharField(max_length=100)
     # my_orders
     # my_favourites
@@ -103,3 +103,11 @@ class FrontendUser(AbstractBaseUser, PermissionsMixin):
         return self.telNo
 
 
+class UserRefreshToken(models.Model):
+    user = models.ForeignKey(FrontendUser, on_delete=models.CASCADE)
+    token = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def __str__(self):
+        return self.token
