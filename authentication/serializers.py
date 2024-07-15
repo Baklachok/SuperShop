@@ -1,11 +1,13 @@
 from datetime import datetime
 
+
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from supershop.settings import SIMPLE_JWT
+from supershop.telephone_check import isMobile
 from .models import FrontendUser, UserRefreshToken
 
 
@@ -24,11 +26,17 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ['telNo', 'name', 'password', 'passwordConfirmation']
 
     def validate(self, data):
-        data = super().validate(data)
+
         if data['password'] != data['passwordConfirmation']:
             raise ValidationError({'password': "Passwords do not match.",
                                    'passwordConfirmation': "Passwords do not match."})
-            # raise serializers.ValidationError("Passwords do not match.")
+        parsed_number = isMobile(data['telNo'], None)
+        if not parsed_number:
+            raise ValidationError({'telNo': "Invalid phone number."})
+
+        if FrontendUser.objects.filter(telNo=data['telNo']).exists():
+            raise serializers.ValidationError({'telNo': ['user with this telNo already exists.']})
+
         return data
 
     def create(self, validated_data):
