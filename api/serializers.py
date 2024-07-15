@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
-from .models import Item, Category, Photo, Item_Photos
-from django.contrib.auth import get_user_model
+from .models import Item, Category, Photo, Item_Photos, Color, Size, ItemStock
+
 
 class CategorySerializer(serializers.ModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name='category-detail', lookup_field='slug')
@@ -25,6 +25,17 @@ class PhotoSerializer(serializers.ModelSerializer):
         model = Photo
         fields = '__all__'
 
+class ColorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Color
+        fields = ['name', 'hex']
+
+
+class SizeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Size
+        fields = ['name']
+
 class ItemPhotoSerializer(serializers.ModelSerializer):
     photo = PhotoSerializer()
 
@@ -33,6 +44,8 @@ class ItemPhotoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ItemSerializer(serializers.ModelSerializer):
+    colors = ColorSerializer(many=True, read_only=True)
+    sizes = SizeSerializer(many=True, read_only=True)
     class Meta:
         model = Item
         fields = '__all__'
@@ -51,5 +64,25 @@ class ItemSerializer(serializers.ModelSerializer):
             representation['general_photo_two'] = ItemPhotoSerializer(
                 instance.general_photo_two).data if instance.general_photo_two else None
 
+        if request and request.query_params.get('populate') == 'categories':
+            representation['categories'] = CategorySerializer(instance.categories.all(), many=True, context={'request': request}).data
+
+        if request and request.query_params.get('populate') == 'colors_sizes':
+            representation['colors'] = ColorSerializer(instance.colors.all(), many=True).data
+            representation['sizes'] = SizeSerializer(instance.sizes.all(), many=True).data
+        else:
+            representation['colors'] = []
+            representation['sizes'] = []
+
         return representation
 
+
+class StockItemSerializer(serializers.ModelSerializer):
+    item_id = serializers.IntegerField(source='item.id')
+    color = serializers.CharField(source='color.name')
+    hex = serializers.CharField(source='color.hex')
+    size = serializers.CharField(source='size.name')
+
+    class Meta:
+        model = ItemStock
+        fields = ['item_id', 'color', 'hex', 'size', 'quantity']

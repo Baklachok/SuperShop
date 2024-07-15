@@ -1,10 +1,20 @@
 from django import forms
 from django.contrib import admin
 
-from api.forms import ItemForm
-from api.models import Item, Category, Item_Photos, Photo
+from api.forms import ItemForm, ItemStockInlineForm
+from api.models import Item, Category, Item_Photos, Photo, Color, Size, ItemStock
+from api.widjets import ColorPickerWidget
 
 admin.site.register(Photo)
+admin.site.register(Size)
+
+class ItemColorForm(forms.ModelForm):
+    class Meta:
+        model = Color
+        fields = '__all__'
+        widgets = {
+            'hex': ColorPickerWidget,
+        }
 
 class Item_PhotosInlineForm(forms.ModelForm):
     class Meta:
@@ -38,9 +48,20 @@ class Item_PhotosInline(admin.TabularInline):
                     kwargs["queryset"] = Photo.objects.filter(item_photo__isnull=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+class ItemStockInline(admin.TabularInline):
+    model = ItemStock
+    form = ItemStockInlineForm
+    extra = 1
 
-
-
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name in ['color', 'size']:
+            item_id = request.resolver_match.kwargs.get('object_id')
+            if item_id:
+                if db_field.name == 'color':
+                    kwargs["queryset"] = Color.objects.filter(item_id=item_id)
+                elif db_field.name == 'size':
+                    kwargs["queryset"] = Size.objects.filter(item_id=item_id)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
@@ -49,7 +70,7 @@ class ItemAdmin(admin.ModelAdmin):
                     'discount', 'price_with_discount', 'general_photo_one', 'general_photo_two',)
     readonly_fields = ('price_with_discount', )
     list_filter = ('categories',)
-    inlines = [Item_PhotosInline]
+    inlines = [Item_PhotosInline, ItemStockInline]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name in ['general_photo_one', 'general_photo_two']:
@@ -83,3 +104,9 @@ class ItemPhotosAdmin(admin.ModelAdmin):
             if not request.resolver_match.kwargs.get('object_id'):
                 kwargs["queryset"] = Photo.objects.filter(item_photo__isnull=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+@admin.register(Color)
+class ColorAdmin(admin.ModelAdmin):
+    form = ItemColorForm
+    list_display = ('item', 'name', 'hex')
+

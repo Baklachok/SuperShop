@@ -1,6 +1,7 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models, transaction
 from autoslug import AutoSlugField
+from django.db.models import Sum
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django import forms
@@ -39,6 +40,9 @@ class Item(models.Model):
     general_photo_two = models.OneToOneField('Item_Photos', on_delete=models.SET_NULL,
                                              related_name='item_general_photo_two', blank=True,
                                              null=True)
+    information = models.TextField(blank=True)
+    brand = models.TextField(blank=True)
+    feature = models.TextField(blank=True)
     _updating = False
 
     def save(self, *args, **kwargs):
@@ -73,6 +77,20 @@ class Item(models.Model):
     def __str__(self):
         return self.name
 
+    def available_colors(self):
+        return Color.objects.filter(itemstock__item=self).distinct()
+
+    def available_sizes(self):
+        return Size.objects.filter(itemstock__item=self).distinct()
+
+    def get_stock(self, color=None, size=None):
+        queryset = ItemStock.objects.filter(item=self)
+        if color:
+            queryset = queryset.filter(color=color)
+        if size:
+            queryset = queryset.filter(size=size)
+        return queryset.aggregate(total=Sum('quantity'))['total']
+
     @property
     def all_photos(self):
         return format_html(
@@ -84,6 +102,7 @@ class Item(models.Model):
                 for photo in self.item_photos.all()
             ])
         )
+
 
 class Photo(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -126,6 +145,30 @@ class Item_Photos(models.Model):
         super(Item_Photos, self).save(*args, **kwargs)
     def __str__(self):
         return f'{self.item.name} - {self.photo.name}'
+
+class Color(models.Model):
+    item = models.ForeignKey(Item, related_name='colors', on_delete=models.CASCADE)
+    name = models.CharField(max_length=30)
+    hex = models.CharField(max_length=7, default='#FF0000')
+
+    def __str__(self):
+        return self.name
+
+class Size(models.Model):
+    item = models.ForeignKey(Item, related_name='sizes', on_delete=models.CASCADE)
+    name = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.name
+
+class ItemStock(models.Model):
+    item = models.ForeignKey(Item, related_name='stocks', on_delete=models.CASCADE)
+    color = models.ForeignKey(Color, on_delete=models.CASCADE)
+    size = models.ForeignKey(Size, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.item.name} - {self.color.name} - {self.size.name}"
 
 @receiver(post_delete, sender=Item_Photos)
 def delete_orphaned_photos(sender, instance, **kwargs):
@@ -204,5 +247,3 @@ def update_item_general_photos_on_save(sender, instance, **kwargs):
                     if instance.general_photo_two:
                         instance.general_photo_two.is_general_two = True
                         instance.general_photo_two.save(update_fields=['is_general_two'])
-
-

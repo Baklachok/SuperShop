@@ -4,9 +4,9 @@ import logging
 
 from rest_framework.response import Response
 
-from api.models import Item, Category, Photo
+from api.models import Item, Category, Photo, ItemStock
 from api.pagination import CustomPagination
-from api.serializers import ItemSerializer, CategorySerializer, PhotoSerializer
+from api.serializers import ItemSerializer, CategorySerializer, PhotoSerializer, StockItemSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,10 @@ class ItemViewSet(viewsets.ModelViewSet):
                     queryset = queryset.prefetch_related('item_photos__photo')
                 elif field == 'general_photos':
                     queryset = queryset.prefetch_related('general_photo_one__photo', 'general_photo_two__photo')
+                elif field == 'categories':
+                    queryset = queryset.prefetch_related('categories')
+                elif field == 'colors_sizes':
+                    queryset = queryset.prefetch_related('colors', 'sizes')
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -63,3 +67,14 @@ class ItemDetail(generics.RetrieveAPIView):
         context['request'] = self.request
         return context
 
+class StockItemView(generics.ListAPIView):
+    serializer_class = StockItemSerializer
+
+    def get_queryset(self):
+        item_id = self.kwargs['item_id']
+        return ItemStock.objects.filter(item_id=item_id)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response({'stock_items': serializer.data})
