@@ -13,7 +13,7 @@ from .models import AdminUser, FrontendUser
 class AdminBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
-            print("1")
+
             user = AdminUser.objects.get(email=username)
             if user.check_password(password):
                 return user
@@ -30,7 +30,7 @@ class AdminBackend(BaseBackend):
 class FrontendBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
-            print("2")
+
             user = FrontendUser.objects.get(telNo=username)
             if user.check_password(password):
                 return user
@@ -46,7 +46,6 @@ class FrontendBackend(BaseBackend):
 class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
 
-        print("3")
         header = get_authorization_header(request).split()
         if not header or header[0].lower() != b'bearer':
             # Если нет заголовка Authorization, проверяем куки

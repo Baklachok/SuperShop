@@ -4,14 +4,16 @@ from .models import Basket, BasketItem
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source='item.item.name', read_only=True)
-    product_price = serializers.DecimalField(source='item.item.price', max_digits=10, decimal_places=2, read_only=True)
-    product_image = serializers.ImageField(source='item.item.general_photo_one', read_only=True)
+    product_name = serializers.CharField(source='product.item.name', read_only=True)
+    product_price = serializers.DecimalField(source='product.item.price', max_digits=10, decimal_places=2, read_only=True)
+    product_price_with_discount = serializers.CharField(source='product.item.price_with_discount', read_only=True)
+    product_image = serializers.ImageField(source='product.item.general_photo_one', read_only=True)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = BasketItem
-        fields = ['id', 'product', 'product_name', 'product_price', 'product_image', 'quantity', 'total_price']
+        fields = ['id', 'product', 'product_name', 'product_price', 'product_price_with_discount',
+                  'product_image', 'quantity', 'total_price']
 
 
 class BasketSerializer(serializers.ModelSerializer):
