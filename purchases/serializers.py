@@ -7,10 +7,12 @@ class BasketItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BasketItem
-        fields = ['item', 'quantity']
+        fields = ['item', 'quantity', "item_name"]
+
 
 class BasketSerializer(serializers.ModelSerializer):
     items = BasketItemSerializer(many=True)
+    print(items)
 
     class Meta:
         model = Basket

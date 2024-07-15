@@ -8,6 +8,9 @@ class BasketViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        print(self.request.user)
+        print(self.queryset)
+        print(Basket.objects.values())
         return Basket.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
