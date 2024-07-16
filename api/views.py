@@ -2,6 +2,7 @@
 from rest_framework import viewsets, generics
 import logging
 
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from api.models import Item, Category, Photo, ItemStock
@@ -14,6 +15,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     pagination_class = CustomPagination
+    permission_classes = (AllowAny,)
     def get_queryset(self):
         category_slug = self.kwargs.get('category_slug')
         if category_slug:

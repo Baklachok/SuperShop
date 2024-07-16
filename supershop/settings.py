@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'api',
     'corsheaders',
     'authentication',
+    'purchases',
 ]
 
 MIDDLEWARE = [
@@ -129,6 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTHENTICATION_BACKENDS = (
     'authentication.backends.AdminBackend',
     'authentication.backends.FrontendBackend',
+    'authentication.backends.CookieJWTAuthentication',
 )
 
 AUTH_USER_MODEL = 'authentication.AdminUser'
@@ -157,9 +159,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    # 'DEFAULT_AUTHENTICATION_CLASSES': (
+    #     'authentication.backends.CookieJWTAuthentication',
+    # ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 10
 }
