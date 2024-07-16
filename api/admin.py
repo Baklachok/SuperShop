@@ -53,20 +53,10 @@ class ItemStockInline(admin.TabularInline):
     form = ItemStockInlineForm
     extra = 1
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name in ['color', 'size']:
-            item_id = request.resolver_match.kwargs.get('object_id')
-            if item_id:
-                if db_field.name == 'color':
-                    kwargs["queryset"] = Color.objects.filter(item_id=item_id)
-                elif db_field.name == 'size':
-                    kwargs["queryset"] = Size.objects.filter(item_id=item_id)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
     form = ItemForm
-    list_display = ('name', 'description', 'price',  'rating','order_count',
+    list_display = ('name', 'description', 'price',  'rating', 'order_count',
                     'discount', 'price_with_discount', 'general_photo_one', 'general_photo_two',)
     readonly_fields = ('price_with_discount', )
     list_filter = ('categories',)
@@ -108,5 +98,5 @@ class ItemPhotosAdmin(admin.ModelAdmin):
 @admin.register(Color)
 class ColorAdmin(admin.ModelAdmin):
     form = ItemColorForm
-    list_display = ('item', 'name', 'hex')
+    list_display = ('name', 'hex')
 

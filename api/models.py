@@ -147,7 +147,6 @@ class Item_Photos(models.Model):
         return f'{self.item.name} - {self.photo.name}'
 
 class Color(models.Model):
-    item = models.ForeignKey(Item, related_name='colors', on_delete=models.CASCADE)
     name = models.CharField(max_length=30)
     hex = models.CharField(max_length=7, default='#FF0000')
 
@@ -155,7 +154,6 @@ class Color(models.Model):
         return self.name
 
 class Size(models.Model):
-    item = models.ForeignKey(Item, related_name='sizes', on_delete=models.CASCADE)
     name = models.CharField(max_length=30)
 
     def __str__(self):
@@ -170,20 +168,6 @@ class ItemStock(models.Model):
 
     def __str__(self):
         return f"{self.item.name} - {self.color.name} - {self.size.name}"
-
-    def save(self, *args, **kwargs):
-        if self.quantity == 0:
-            self.delete()
-        else:
-            super().save(*args, **kwargs)
-
-    def delete(self, using=None, keep_parents=False):
-        if not self._deleting:
-            self._deleting = True
-            try:
-                super().delete(using, keep_parents)
-            finally:
-                self._deleting = False
 
 
 @receiver(post_delete, sender=Item_Photos)
@@ -268,9 +252,3 @@ def update_item_general_photos_on_save(sender, instance, **kwargs):
                     if instance.general_photo_two:
                         instance.general_photo_two.is_general_two = True
                         instance.general_photo_two.save(update_fields=['is_general_two'])
-
-
-@receiver(post_save, sender=ItemStock)
-def delete_empty_item_stock(sender, instance, **kwargs):
-    if instance.quantity == 0 and not instance._deleting:
-        instance.delete()

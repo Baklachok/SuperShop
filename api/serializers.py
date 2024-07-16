@@ -43,12 +43,30 @@ class ItemPhotoSerializer(serializers.ModelSerializer):
         model = Item_Photos
         fields = '__all__'
 
+class StockItemSerializer(serializers.ModelSerializer):
+    item_id = serializers.IntegerField(source='item.id')
+    color = serializers.CharField(source='color.name')
+    hex = serializers.CharField(source='color.hex')
+    size = serializers.CharField(source='size.name')
+
+    class Meta:
+        model = ItemStock
+        fields = ['item_id', 'color', 'hex', 'size', 'quantity']
+
 class ItemSerializer(serializers.ModelSerializer):
     colors = ColorSerializer(many=True, read_only=True)
     sizes = SizeSerializer(many=True, read_only=True)
     class Meta:
         model = Item
         fields = '__all__'
+
+    def get_colors(self, instance):
+        colors = instance.stocks.values('color__name', 'color__hex').distinct()
+        return [{'name': color['color__name'], 'hex': color['color__hex']} for color in colors]
+
+    def get_sizes(self, instance):
+        sizes = instance.stocks.values('size__name').distinct()
+        return [{'name': size['size__name']} for size in sizes]
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -71,21 +89,10 @@ class ItemSerializer(serializers.ModelSerializer):
                                                               context={'request': request}).data
 
         if 'colors_sizes' in populate:
-            representation['colors'] = ColorSerializer(instance.colors.all(), many=True).data
-            representation['sizes'] = SizeSerializer(instance.sizes.all(), many=True).data
+            representation['colors'] = self.get_colors(instance)
+            representation['sizes'] = self.get_sizes(instance)
         else:
             representation['colors'] = []
             representation['sizes'] = []
 
         return representation
-
-
-class StockItemSerializer(serializers.ModelSerializer):
-    item_id = serializers.IntegerField(source='item.id')
-    color = serializers.CharField(source='color.name')
-    hex = serializers.CharField(source='color.hex')
-    size = serializers.CharField(source='size.name')
-
-    class Meta:
-        model = ItemStock
-        fields = ['item_id', 'color', 'hex', 'size', 'quantity']

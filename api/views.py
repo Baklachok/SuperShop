@@ -34,7 +34,7 @@ class ItemViewSet(viewsets.ModelViewSet):
             if 'categories' in populate:
                 queryset = queryset.prefetch_related('categories')
             if 'colors_sizes' in populate:
-                queryset = queryset.prefetch_related('colors', 'sizes')
+                queryset = queryset.prefetch_related('stocks__color', 'stocks__size')
 
         page = self.paginate_queryset(queryset)
         if page is not None:
