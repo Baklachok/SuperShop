@@ -13,7 +13,6 @@ from .models import AdminUser, FrontendUser
 class AdminBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
-
             user = AdminUser.objects.get(email=username)
             if user.check_password(password):
                 return user
@@ -30,7 +29,6 @@ class AdminBackend(BaseBackend):
 class FrontendBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
-
             user = FrontendUser.objects.get(telNo=username)
             if user.check_password(password):
                 return user
@@ -42,6 +40,7 @@ class FrontendBackend(BaseBackend):
             return FrontendUser.objects.get(pk=user_id)
         except FrontendUser.DoesNotExist:
             return None
+
 
 class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):

@@ -1,11 +1,12 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import BasketViewSet
+from django.urls import path
+from .views import BasketViewSet, UpdateBasketItemView, AddToBasketView
+
 app_name = 'purchases'
 
-router = DefaultRouter()
-router.register(r'baskets', BasketViewSet, basename='basket')
-
 urlpatterns = [
-    path('', include(router.urls)),
+    path('baskets/', BasketViewSet.as_view({'get': 'list'})),
+
+    path('baskets/add/', AddToBasketView.as_view(), name='add-to-cart'),
+    path('baskets/basket-item/<int:item_id>/', UpdateBasketItemView.as_view(), name='update-cart-item'),
+
 ]
