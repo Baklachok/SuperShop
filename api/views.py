@@ -73,7 +73,18 @@ class StockItemView(generics.ListAPIView):
 
     def get_queryset(self):
         item_id = self.kwargs['item_id']
-        return ItemStock.objects.filter(item_id=item_id)
+        queryset = ItemStock.objects.filter(item_id=item_id)
+
+        color = self.request.query_params.get('color')
+        size = self.request.query_params.get('size')
+
+        if color:
+            queryset = queryset.filter(color__name=color)
+
+        if size:
+            queryset = queryset.filter(size__name=size)
+
+        return queryset
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
