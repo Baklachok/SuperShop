@@ -53,21 +53,24 @@ class ItemSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         request = self.context.get('request', None)
-        if request and request.query_params.get('populate') == 'all_photo':
+        populate = request.query_params.get('populate', '').split(',') if request else []
+
+        if 'all_photo' in populate:
             representation['all_photo'] = ItemPhotoSerializer(instance.item_photos.all(), many=True).data
         else:
             representation['all_photos'] = list(instance.item_photos.values_list('id', flat=True))
 
-        if request and request.query_params.get('populate') == 'general_photos':
+        if 'general_photos' in populate:
             representation['general_photo_one'] = ItemPhotoSerializer(
                 instance.general_photo_one).data if instance.general_photo_one else None
             representation['general_photo_two'] = ItemPhotoSerializer(
                 instance.general_photo_two).data if instance.general_photo_two else None
 
-        if request and request.query_params.get('populate') == 'categories':
-            representation['categories'] = CategorySerializer(instance.categories.all(), many=True, context={'request': request}).data
+        if 'categories' in populate:
+            representation['categories'] = CategorySerializer(instance.categories.all(), many=True,
+                                                              context={'request': request}).data
 
-        if request and request.query_params.get('populate') == 'colors_sizes':
+        if 'colors_sizes' in populate:
             representation['colors'] = ColorSerializer(instance.colors.all(), many=True).data
             representation['sizes'] = SizeSerializer(instance.sizes.all(), many=True).data
         else:

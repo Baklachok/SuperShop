@@ -23,19 +23,18 @@ class ItemViewSet(viewsets.ModelViewSet):
         return self.queryset
 
     def list(self, request, *args, **kwargs):
-        populate = request.query_params.get('populate')
+        populate = request.query_params.get('populate', '').split(',')
         queryset = self.get_queryset()
 
         if populate:
-            for field in populate.split(','):
-                if field == 'all_photo':
-                    queryset = queryset.prefetch_related('item_photos__photo')
-                elif field == 'general_photos':
-                    queryset = queryset.prefetch_related('general_photo_one__photo', 'general_photo_two__photo')
-                elif field == 'categories':
-                    queryset = queryset.prefetch_related('categories')
-                elif field == 'colors_sizes':
-                    queryset = queryset.prefetch_related('colors', 'sizes')
+            if 'all_photo' in populate:
+                queryset = queryset.prefetch_related('item_photos__photo')
+            if 'general_photos' in populate:
+                queryset = queryset.prefetch_related('general_photo_one__photo', 'general_photo_two__photo')
+            if 'categories' in populate:
+                queryset = queryset.prefetch_related('categories')
+            if 'colors_sizes' in populate:
+                queryset = queryset.prefetch_related('colors', 'sizes')
 
         page = self.paginate_queryset(queryset)
         if page is not None:
