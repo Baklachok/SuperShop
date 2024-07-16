@@ -11,7 +11,7 @@ class Basket(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Cart of {self.user}"
+        return f"Basket of {self.user}"
 
     @property
     def total_cost(self):
