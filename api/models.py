@@ -2,7 +2,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models, transaction
 from autoslug import AutoSlugField
 from django.db.models import Sum
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import post_delete, pre_save, post_save
 from django.dispatch import receiver
 from django import forms
 from django.urls import reverse
@@ -166,9 +166,25 @@ class ItemStock(models.Model):
     color = models.ForeignKey(Color, on_delete=models.CASCADE)
     size = models.ForeignKey(Size, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=0)
+    _deleting = False  # Внутренний флаг для предотвращения рекурсивного удаления
 
     def __str__(self):
         return f"{self.item.name} - {self.color.name} - {self.size.name}"
+
+    def save(self, *args, **kwargs):
+        if self.quantity == 0:
+            self.delete()
+        else:
+            super().save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False):
+        if not self._deleting:
+            self._deleting = True
+            try:
+                super().delete(using, keep_parents)
+            finally:
+                self._deleting = False
+
 
 @receiver(post_delete, sender=Item_Photos)
 def delete_orphaned_photos(sender, instance, **kwargs):
@@ -195,6 +211,11 @@ def delete_photo_file(sender, instance, **kwargs):
 @receiver(post_delete, sender=Category)
 def delete_category_photo_file(sender, instance, **kwargs):
     instance.photo.delete(save=False)
+
+@receiver(post_delete, sender=ItemStock)
+def delete_empty_item_stock(sender, instance, **kwargs):
+    if instance.quantity == 0:
+        instance.delete()
 
 @receiver(pre_save, sender=Photo)
 def delete_old_photo_file(sender, instance, **kwargs):
@@ -247,3 +268,9 @@ def update_item_general_photos_on_save(sender, instance, **kwargs):
                     if instance.general_photo_two:
                         instance.general_photo_two.is_general_two = True
                         instance.general_photo_two.save(update_fields=['is_general_two'])
+
+
+@receiver(post_save, sender=ItemStock)
+def delete_empty_item_stock(sender, instance, **kwargs):
+    if instance.quantity == 0 and not instance._deleting:
+        instance.delete()
