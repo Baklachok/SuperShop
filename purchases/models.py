@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 
 from api.models import ItemStock
@@ -23,11 +24,11 @@ class Basket(models.Model):
 class BasketItem(models.Model):
     basket = models.ForeignKey(Basket, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(ItemStock, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
+    quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)], default=1)
 
     def __str__(self):
         return f"{self.product.item.name} in {self.basket}"
 
     @property
     def total_price(self):
-        return self.product.item.price * self.quantity
+        return self.product.item.price_with_discount * self.quantity

@@ -7,7 +7,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.item.name', read_only=True)
     product_price = serializers.DecimalField(source='product.item.price', max_digits=10, decimal_places=2, read_only=True)
     product_price_with_discount = serializers.CharField(source='product.item.price_with_discount', read_only=True)
-    product_image = serializers.ImageField(source='product.item.general_photo_one', read_only=True)
+    product_image = serializers.ImageField(source='product.item.general_photo_one.photo.photo', read_only=True)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
