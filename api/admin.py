@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django_admin_inline_paginator.admin import TabularInlinePaginated
 
 from api.forms import ItemForm, ItemStockInlineForm
 from api.models import Item, Category, Item_Photos, Photo, Color, Size, ItemStock
@@ -28,11 +29,12 @@ class Item_PhotosInlineForm(forms.ModelForm):
             self.fields['photo'].disabled = True
 
 
-class Item_PhotosInline(admin.TabularInline):
+class Item_PhotosInline(TabularInlinePaginated):
     model = Item_Photos
     form = Item_PhotosInlineForm
     extra = 1
     readonly_fields = ('is_general_one', 'is_general_two')
+    per_page = 5
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "photo":
@@ -48,10 +50,11 @@ class Item_PhotosInline(admin.TabularInline):
                     kwargs["queryset"] = Photo.objects.filter(item_photo__isnull=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-class ItemStockInline(admin.TabularInline):
+class ItemStockInline(TabularInlinePaginated):
     model = ItemStock
     form = ItemStockInlineForm
     extra = 1
+    per_page = 5
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):

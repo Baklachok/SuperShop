@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'authentication',
     'purchases',
+    'django_admin_inline_paginator',
 ]
 
 MIDDLEWARE = [
