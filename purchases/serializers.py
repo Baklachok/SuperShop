@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Basket, BasketItem
+from .models import Basket, BasketItem, Payment
+from yookassa import Payment as YooKassaPayment
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
@@ -60,3 +61,39 @@ class AddToBasketSerializer(serializers.Serializer):
     #             basket_item.save()
     #
     #     return instance
+
+
+class CreatePaymentSerializer(serializers.Serializer):
+    basket_id = serializers.PrimaryKeyRelatedField(queryset=Basket.objects.all())
+
+    def create(self, validated_data):
+        basket = validated_data['basket_id']
+        amount = basket.total_cost
+        payment = Payment.objects.create(basket=basket, amount=amount)
+
+        # Создание платежа через YooKassa
+        payment_request = {
+            "amount": {
+                "value": str(amount),
+                "currency": "RUB"
+            },
+            "confirmation": {
+                "type": "redirect",
+                "return_url": "http://127.0.0.1:3000/cart"
+            },
+            "capture": True,
+            "description": f"Payment for basket {basket.id}"
+        }
+
+        yoo_payment = YooKassaPayment.create(payment_request)
+        payment.yookassa_payment_id = yoo_payment.id
+        payment.yookassa_confirmation_url = yoo_payment.confirmation.confirmation_url
+        payment.save()
+
+        return payment
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['id', 'basket', 'amount', 'status', 'yookassa_payment_id', 'yookassa_confirmation_url', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'status', 'yookassa_payment_id', 'yookassa_confirmation_url', 'created_at', 'updated_at']

@@ -13,6 +13,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+from yookassa import Configuration
 
 load_dotenv()
 
@@ -28,7 +29,7 @@ SECRET_KEY = 'django-insecure-i06dz1w)4^dj06dlf!r_cb91g&e7dv*ixb(cq$syn*)ji&o_z-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', "http://localhost:3000"]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', "http://localhost:3000", '.ngrok-free.app']
 
 # Application definition
 
@@ -182,3 +183,6 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
     'JTI_CLAIM': 'jti',
 }
+
+Configuration.account_id = os.getenv('YOOKASSA_ID')
+Configuration.secret_key = os.getenv('YOOKASSA_KEY')
