@@ -43,6 +43,7 @@ class Item(models.Model):
     information = models.TextField(blank=True)
     brand = models.TextField(blank=True)
     feature = models.TextField(blank=True)
+    size_table = models.TextField(blank=True)
     _updating = False
 
     def save(self, *args, **kwargs):

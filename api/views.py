@@ -16,11 +16,43 @@ class ItemViewSet(viewsets.ModelViewSet):
     serializer_class = ItemSerializer
     pagination_class = CustomPagination
     permission_classes = (AllowAny,)
+
     def get_queryset(self):
+        queryset = self.queryset
         category_slug = self.kwargs.get('category_slug')
+
         if category_slug:
-            return self.queryset.filter(categories__slug=category_slug)
-        return self.queryset
+            queryset = queryset.filter(categories__slug=category_slug)
+
+        min_price = self.request.query_params.get('min_price')
+        max_price = self.request.query_params.get('max_price')
+        with_discount = self.request.query_params.get('with_discount')
+        in_stock = self.request.query_params.get('in_stock')
+        sort = self.request.query_params.get('sort')
+
+        if min_price is not None:
+            queryset = queryset.filter(price__gte=min_price)
+
+        if max_price is not None:
+            queryset = queryset.filter(price__lte=max_price)
+
+        if with_discount:
+            queryset = queryset.filter(discount__gt=0)
+
+        if in_stock:
+            queryset = queryset.filter(stocks__quantity__gt=0).distinct()
+
+        if sort:
+            if sort == 'discount':
+                queryset = queryset.order_by('-discount')
+            elif sort == 'price_asc':
+                queryset = queryset.order_by('price')
+            elif sort == 'price_desc':
+                queryset = queryset.order_by('-price')
+        else:
+            queryset = queryset.order_by('-order_count')
+
+        return queryset
 
     def list(self, request, *args, **kwargs):
         populate = request.query_params.get('populate', '').split(',')
