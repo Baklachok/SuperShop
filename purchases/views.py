@@ -1,12 +1,14 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, generics
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.models import Item, ItemStock
 from authentication.backends import CookieJWTAuthentication
-from .models import Basket, BasketItem
-from .serializers import BasketSerializer, BasketItemSerializer, AddToBasketSerializer
+from .models import Basket, BasketItem, Favourites, FavouritesItem
+from .serializers import BasketSerializer, BasketItemSerializer, AddToBasketSerializer, FavouritesSerializer
 
 
 class BasketViewSet(viewsets.ModelViewSet):
@@ -87,3 +89,38 @@ class AddToBasketView(generics.CreateAPIView):
             return Response(basket_item_serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FavouritesViewSet(viewsets.ModelViewSet):
+    authentication_classes = [CookieJWTAuthentication, ]
+    permission_classes = [IsAuthenticated]
+    queryset = Favourites.objects.all()
+    serializer_class = FavouritesSerializer
+
+    @action(detail=True, methods=['post'], url_path='add_item')
+    def add_item(self, request, pk=None):
+        print('ya zashel')
+        favourites = Favourites.objects.get(user=request.user)
+        product_id = pk
+        try:
+            product = ItemStock.objects.get(id=product_id)
+        except Item.DoesNotExist:
+            return Response({"error": True, "message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if FavouritesItem.objects.filter(favourites=favourites, product=product).exists():
+            return Response({'error': True, 'message': 'Product already in favourites'}, status=status.HTTP_400_BAD_REQUEST)
+
+        FavouritesItem.objects.create(favourites=favourites, product=product)
+        return Response({'success': True, 'message': 'Product added to favourites'}, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def remove_item(self, request, pk=None):
+        favourites = Favourites.objects.get(user=request.user)
+        product_id = pk
+
+        favourite_item = FavouritesItem.objects.filter(favourites=favourites, product=product).first()
+        if favourite_item:
+            favourite_item.delete()
+            return Response({'success': True, 'message': 'Product removed from favourites'}, status=status.HTTP_204_NO_CONTENT)
+
+        return Response({'error': True, 'message': 'Product not in favourites'}, status=status.HTTP_400_BAD_REQUEST)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Basket, BasketItem
+from .models import Basket, BasketItem, Favourites, FavouritesItem
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
@@ -10,6 +10,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
     product_price_with_discount = serializers.CharField(source='product.item.price_with_discount', read_only=True)
     product_image = serializers.ImageField(source='product.item.general_photo_one.photo.photo', read_only=True)
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    in_stock = serializers.BooleanField(read_only=True)
 
     category_slug = serializers.SerializerMethodField()
 
@@ -17,7 +18,7 @@ class BasketItemSerializer(serializers.ModelSerializer):
         model = BasketItem
         fields = ['id', 'product', 'product_name', 'item_id', 'category_slug', 'product_price',
                   'product_price_with_discount',
-                  'product_image', 'quantity', 'total_price']
+                  'product_image', 'quantity', 'total_price', 'in_stock']
 
     def get_category_slug(self, obj):
         categories = obj.product.item.categories.all()
@@ -27,10 +28,10 @@ class BasketItemSerializer(serializers.ModelSerializer):
 class BasketSerializer(serializers.ModelSerializer):
     items = BasketItemSerializer(many=True, read_only=True)
     total_cost = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-
+    is_available_to_order = serializers.BooleanField(read_only=True)
     class Meta:
         model = Basket
-        fields = ['id', 'user', 'items', 'total_cost', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'items', 'total_cost','is_available_to_order', 'created_at', 'updated_at']
 
 
 class AddToBasketSerializer(serializers.Serializer):
@@ -39,6 +40,32 @@ class AddToBasketSerializer(serializers.Serializer):
 
     class Meta:
         fields = ['product_id', 'quantity']
+
+
+class FavouritesItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.item.name', read_only=True)
+    product_price = serializers.DecimalField(source='product.item.price', max_digits=10, decimal_places=2, read_only=True)
+    item_id = serializers.IntegerField(source='product.item.id', read_only=True)
+    product_price_with_discount = serializers.DecimalField(source='product.item.price_with_discount', max_digits=10, decimal_places=2, read_only=True)
+    product_image = serializers.ImageField(source='product.item.general_photo_one.photo.photo', read_only=True)
+    category_slug = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FavouritesItem
+        fields = ['id', 'product', 'product_name', 'item_id', 'category_slug', 'product_price',
+                  'product_price_with_discount', 'product_image']
+
+    def get_category_slug(self, obj):
+        categories = obj.product.item.categories.all()
+        return [category.slug for category in categories]
+
+class FavouritesSerializer(serializers.ModelSerializer):
+    items = FavouritesItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Favourites
+        fields = ['id', 'user', 'items', 'created_at', 'updated_at']
+
     # def create(self, validated_data):
     #     items_data = validated_data.pop('items')
     #     basket = Basket.objects.create(**validated_data)
