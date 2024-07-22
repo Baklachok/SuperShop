@@ -5,10 +5,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.models import Item, ItemStock
+from api.models import Item, ItemStock, Color, Size
 from authentication.backends import CookieJWTAuthentication
 from .models import Basket, BasketItem, Favourites, FavouritesItem
-from .serializers import BasketSerializer, BasketItemSerializer, AddToBasketSerializer, FavouritesSerializer
+from .serializers import BasketSerializer, BasketItemSerializer, AddToBasketSerializer, FavouritesSerializer, \
+    BasketItemDeleteSerializer
 
 
 class BasketViewSet(viewsets.ModelViewSet):
@@ -59,6 +60,36 @@ class UpdateBasketItemView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class BasketItemDeleteView(APIView):
+    authentication_classes = [CookieJWTAuthentication, ]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        serializer = BasketItemDeleteSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        product_ids = serializer.validated_data['ids']
+
+        if not product_ids:
+            return Response({"error": True, "message": "Product IDs are required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            basket_items = BasketItem.objects.filter(id__in=product_ids)
+            if not basket_items.exists():
+                return Response({"error": True, "message": "No matching items found to delete"},
+                                status=status.HTTP_404_NOT_FOUND)
+
+            basket_items.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except BasketItem.DoesNotExist:
+            return Response({"error": True, "message": "Some basket items do not exist"},
+                            status=status.HTTP_404_NOT_FOUND)
+        except ValueError:
+            return Response({"error": True, "message": "Invalid product IDs"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": True, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class AddToBasketView(generics.CreateAPIView):
     authentication_classes = [CookieJWTAuthentication, ]
     permission_classes = [IsAuthenticated]
@@ -68,12 +99,16 @@ class AddToBasketView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = request.user
-            product_id = serializer.validated_data['product_id']
+            item_id = serializer.validated_data['item_id']
+            color = serializer.validated_data['color']
+            size = serializer.validated_data['size']
             quantity = serializer.validated_data['quantity']
+            color_id = Color.objects.get(name=color).id
+            size_id = Size.objects.get(name=size).id
 
             try:
-                product = ItemStock.objects.get(id=product_id)
-            except Item.DoesNotExist:
+                product = ItemStock.objects.get(item=item_id, color=color_id, size=size_id)
+            except ItemStock.DoesNotExist:
                 return Response({"error": True, "message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 
             basket, created = Basket.objects.get_or_create(user=user)

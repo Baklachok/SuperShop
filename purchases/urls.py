@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from .views import BasketViewSet, UpdateBasketItemView, AddToBasketView
+from .views import BasketViewSet, UpdateBasketItemView, AddToBasketView, BasketItemDeleteView
 
 app_name = 'purchases'
 
@@ -14,5 +14,6 @@ urlpatterns = [
     path('baskets/add/', AddToBasketView.as_view(), name='add-to-cart'),
     path('baskets/basket-item/<int:item_id>/', UpdateBasketItemView.as_view(), name='update-cart-item'),
     # path('', include(router.urls)),
+    path('baskets/delete-items/', BasketItemDeleteView.as_view(), name='delete-basket-items'),
 
 ]

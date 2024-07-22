@@ -22,6 +22,10 @@ class Basket(models.Model):
     def is_available_to_order(self):
         return not self.items.filter(product__quantity__lte=0).exists()
 
+    @property
+    def without_discount(self):
+        return sum(item.product.item.price * item.quantity for item in self.items.all())
+
 
 class BasketItem(models.Model):
     basket = models.ForeignKey(Basket, related_name='items', on_delete=models.CASCADE)
