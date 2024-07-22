@@ -184,9 +184,6 @@ def webhook_view(request):
                 payment.status = status.upper()  # Assuming your PaymentStatus choices are in uppercase
 
                 if payment.status == Payment.PaymentStatus.SUCCEEDED:
-                    print("Payment succeeded")
-                    print(payment.user)
-                    print("Payment succeeded")
                     basket_items = BasketItem.objects.filter(basket=payment.basket)
                     order = Order.objects.get(user=payment.user)
                     order.update_order_status("paid")
