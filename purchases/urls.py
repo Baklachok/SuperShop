@@ -1,5 +1,5 @@
 from django.urls import path, include
-from .views import BasketViewSet, UpdateBasketItemView, AddToBasketView, CreatePaymentView, UpdatePaymentStatusView, \
+from .views import BasketViewSet, UpdateBasketItemView, AddToBasketView, CreatePaymentView, \
     webhook_view, BasketItemDeleteView
 from rest_framework.routers import DefaultRouter
 
