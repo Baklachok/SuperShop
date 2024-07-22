@@ -174,6 +174,9 @@ def webhook_view(request):
                         stock_item.quantity -= item.quantity
                         stock_item.save()
 
+                        item.product.item.order_count += item.quantity
+                        item.product.item.save()
+
                     # Clear the basket
                     basket_items.delete()
 
