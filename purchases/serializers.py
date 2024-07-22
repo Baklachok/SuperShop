@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
+from authentication.models import FrontendUser
 from .models import Basket, BasketItem, Payment, Favourites, FavouritesItem
 from yookassa import Payment as YooKassaPayment
-
 
 
 class BasketItemSerializer(serializers.ModelSerializer):
@@ -109,11 +109,15 @@ class FavouritesSerializer(serializers.ModelSerializer):
 
 class CreatePaymentSerializer(serializers.Serializer):
     basket_id = serializers.PrimaryKeyRelatedField(queryset=Basket.objects.all())
+    user_id = serializers.PrimaryKeyRelatedField(queryset=FrontendUser.objects.all())
 
     def create(self, validated_data):
         basket = validated_data['basket_id']
+        print(validated_data)
+        user = validated_data['user_id']
+
         amount = basket.total_cost
-        payment = Payment.objects.create(basket=basket, amount=amount)
+        payment = Payment.objects.create(basket=basket, amount=amount, user=user)
 
         # Создание платежа через YooKassa
         payment_request = {
@@ -136,8 +140,11 @@ class CreatePaymentSerializer(serializers.Serializer):
 
         return payment
 
+
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['id', 'basket', 'amount', 'status', 'yookassa_payment_id', 'yookassa_confirmation_url', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'status', 'yookassa_payment_id', 'yookassa_confirmation_url', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'basket', 'amount', 'status', 'yookassa_payment_id', 'yookassa_confirmation_url',
+                  'created_at', 'updated_at']
+        read_only_fields = ['id', 'status', 'yookassa_payment_id', 'yookassa_confirmation_url', 'created_at',
+                            'updated_at']
