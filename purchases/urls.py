@@ -1,7 +1,8 @@
 from django.urls import path, include
+from .views import BasketViewSet, UpdateBasketItemView, AddToBasketView, CreatePaymentView, UpdatePaymentStatusView, \
+    webhook_view, BasketItemDeleteView
 from rest_framework.routers import DefaultRouter
 
-from .views import BasketViewSet, UpdateBasketItemView, AddToBasketView, BasketItemDeleteView
 
 app_name = 'purchases'
 
@@ -13,7 +14,10 @@ urlpatterns = [
 
     path('baskets/add/', AddToBasketView.as_view(), name='add-to-cart'),
     path('baskets/basket-item/<int:item_id>/', UpdateBasketItemView.as_view(), name='update-cart-item'),
-    # path('', include(router.urls)),
+    path('payments/create/', CreatePaymentView.as_view(), name='create-payment'),
+    path('webhooks/', webhook_view, name='webhook'),
     path('baskets/delete-items/', BasketItemDeleteView.as_view(), name='delete-basket-items'),
+    # path('', include(router.urls)),
+
 
 ]

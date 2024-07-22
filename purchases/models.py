@@ -1,5 +1,8 @@
+import uuid
+
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils.translation import gettext_lazy
 from rest_framework.exceptions import ValidationError
 
 from api.models import ItemStock
@@ -55,6 +58,23 @@ class BasketItem(models.Model):
                 f"BasketItem with product '{self.product}' already exists. Quantity updated to {existing_item.quantity}.")
         super().save(*args, **kwargs)
 
+
+class Payment(models.Model):
+    class PaymentStatus(models.TextChoices):
+        PENDING = 'PENDING', gettext_lazy('Pending')
+        SUCCEEDED = 'SUCCEEDED', gettext_lazy('Succeeded')
+        CANCELED = 'CANCELED', gettext_lazy('Canceled')
+    basket = models.ForeignKey(Basket, on_delete=models.CASCADE, related_name='payments')
+    order_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    status = models.CharField(max_length=10, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    yookassa_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    yookassa_confirmation_url = models.URLField(max_length=200, blank=True, null=True)
+
+    def __str__(self):
+        return self.order_id
 
 class Favourites(models.Model):
     user = models.ForeignKey(FrontendUser, on_delete=models.CASCADE)
