@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from django.utils import timezone
 
 from rest_framework import status, generics
 from rest_framework.permissions import AllowAny
@@ -40,8 +40,8 @@ class MyTokenObtainPairView(TokenObtainPairView):
             response_data = serializer.validated_data
             response = Response({"success": True}, status=status.HTTP_201_CREATED)
             # Set tokens in cookies
-            access_token_expiry = datetime.now() + SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
-            refresh_token_expiry = datetime.now() + SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
+            access_token_expiry = timezone.now() + SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
+            refresh_token_expiry = timezone.now() + SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
 
             response.set_cookie('refresh_token', response_data['refresh'], httponly=True,
                                 expires=refresh_token_expiry)
@@ -57,7 +57,6 @@ class TokenRefreshView(generics.GenericAPIView):
     def get(self, request):
         access_token = request.COOKIES.get('access_token')
         refresh_token = request.COOKIES.get('refresh_token')
-
         if access_token:
             try:
                 AccessToken(access_token)
@@ -67,11 +66,11 @@ class TokenRefreshView(generics.GenericAPIView):
 
         if refresh_token:
             try:
+
                 stored_token = UserRefreshToken.objects.get(token=refresh_token)
-                if stored_token.expires_at < datetime.now():
+                if stored_token.expires_at < timezone.now():
                     return Response({'error': True, 'message': 'Refresh token expired'},
                                     status=status.HTTP_401_UNAUTHORIZED)
-
                 new_access_token = RefreshToken(refresh_token).access_token
                 response = Response({'access': 'created'}, status=status.HTTP_200_OK)
                 response.set_cookie(

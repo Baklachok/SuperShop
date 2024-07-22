@@ -1,7 +1,8 @@
 from django.contrib import admin
 from rest_framework.exceptions import ValidationError
 
-from .models import Basket, BasketItem
+from .models import Basket, BasketItem, FavouritesItem, Favourites
+
 
 class BasketItemInline(admin.TabularInline):
     model = BasketItem
@@ -18,5 +19,5 @@ class BasketItemAdmin(admin.ModelAdmin):
         except ValidationError as e:
             self.message_user(request, str(e), level='warning')
 
-# Удаляем лишнюю регистрацию BasketItem
 admin.site.register(BasketItem, BasketItemAdmin)
+

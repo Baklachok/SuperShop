@@ -21,8 +21,13 @@ class Basket(models.Model):
     def total_cost(self):
         return sum(item.total_price for item in self.items.all())
 
-    # def __str__(self):
-    #     return f"{self.item.item.name} - {self.item.color.name} - {self.item.size.name} ({self.quantity})"
+    @property
+    def is_available_to_order(self):
+        return not self.items.filter(product__quantity__lte=0).exists()
+
+    @property
+    def without_discount(self):
+        return sum(item.product.item.price * item.quantity for item in self.items.all())
 
 
 class BasketItem(models.Model):
@@ -37,6 +42,10 @@ class BasketItem(models.Model):
     def total_price(self):
         return self.product.item.price_with_discount * self.quantity
 
+    @property
+    def in_stock(self):
+        return self.product.quantity > 0
+
     def save(self, *args, **kwargs):
         # Check if the same product already exists in the basket
         existing_item = BasketItem.objects.filter(basket=self.basket, product=self.product).first()
@@ -48,6 +57,7 @@ class BasketItem(models.Model):
             raise ValidationError(
                 f"BasketItem with product '{self.product}' already exists. Quantity updated to {existing_item.quantity}.")
         super().save(*args, **kwargs)
+
 
 class Payment(models.Model):
     class PaymentStatus(models.TextChoices):
@@ -65,3 +75,19 @@ class Payment(models.Model):
 
     def __str__(self):
         return self.order_id
+
+class Favourites(models.Model):
+    user = models.ForeignKey(FrontendUser, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Favourites of {self.user}"
+
+
+class FavouritesItem(models.Model):
+    favourites = models.ForeignKey(Favourites, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(ItemStock, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.product.item.name} in {self.favourites}"

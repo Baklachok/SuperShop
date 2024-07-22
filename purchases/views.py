@@ -4,17 +4,23 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, status, generics
 from rest_framework.generics import CreateAPIView
+from rest_framework.decorators import action
+from django.shortcuts import get_object_or_404
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.models import Item, ItemStock
+from api.models import Item, ItemStock, Color, Size
 from authentication.backends import CookieJWTAuthentication
-from .models import Basket, BasketItem, Payment
+
+from .models import Basket, BasketItem, Payment, Favourites, FavouritesItem
 from .serializers import BasketSerializer, BasketItemSerializer, AddToBasketSerializer, PaymentSerializer, \
-    CreatePaymentSerializer
+    CreatePaymentSerializer, FavouritesSerializer, \
+    BasketItemDeleteSerializer
 
 from yookassa import Payment as YooKassaPayment
+
 
 
 class BasketViewSet(viewsets.ModelViewSet):
@@ -65,6 +71,36 @@ class UpdateBasketItemView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class BasketItemDeleteView(APIView):
+    authentication_classes = [CookieJWTAuthentication, ]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        serializer = BasketItemDeleteSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        product_ids = serializer.validated_data['ids']
+
+        if not product_ids:
+            return Response({"error": True, "message": "Product IDs are required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            basket_items = BasketItem.objects.filter(id__in=product_ids)
+            if not basket_items.exists():
+                return Response({"error": True, "message": "No matching items found to delete"},
+                                status=status.HTTP_404_NOT_FOUND)
+
+            basket_items.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except BasketItem.DoesNotExist:
+            return Response({"error": True, "message": "Some basket items do not exist"},
+                            status=status.HTTP_404_NOT_FOUND)
+        except ValueError:
+            return Response({"error": True, "message": "Invalid product IDs"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": True, "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class AddToBasketView(generics.CreateAPIView):
     authentication_classes = [CookieJWTAuthentication, ]
     permission_classes = [IsAuthenticated]
@@ -74,12 +110,16 @@ class AddToBasketView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = request.user
-            product_id = serializer.validated_data['product_id']
+            item_id = serializer.validated_data['item_id']
+            color = serializer.validated_data['color']
+            size = serializer.validated_data['size']
             quantity = serializer.validated_data['quantity']
+            color_id = Color.objects.get(name=color).id
+            size_id = Size.objects.get(name=size).id
 
             try:
-                product = ItemStock.objects.get(id=product_id)
-            except Item.DoesNotExist:
+                product = ItemStock.objects.get(item=item_id, color=color_id, size=size_id)
+            except ItemStock.DoesNotExist:
                 return Response({"error": True, "message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
 
             basket, created = Basket.objects.get_or_create(user=user)
@@ -95,6 +135,7 @@ class AddToBasketView(generics.CreateAPIView):
             return Response(basket_item_serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CreatePaymentView(CreateAPIView):
     authentication_classes = [CookieJWTAuthentication, ]
@@ -119,31 +160,6 @@ class CreatePaymentView(CreateAPIView):
         payment = serializer.save()
         payment_serializer = PaymentSerializer(payment)
         return Response(payment_serializer.data, status=status.HTTP_201_CREATED)
-
-class UpdatePaymentStatusView(APIView):
-    authentication_classes = [CookieJWTAuthentication, ]
-    permission_classes = [IsAuthenticated]
-    def post(self, request, *args, **kwargs):
-        payment_id = request.data.get('payment_id')
-        if not payment_id:
-            return Response({"error": True, "message": "Payment ID is required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            payment = Payment.objects.get(id=payment_id)
-        except Payment.DoesNotExist:
-            return Response({"error": True, "message": "Payment not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        try:
-            yoo_payment = YooKassaPayment.find_one(payment.yookassa_payment_id)
-        except Exception as e:
-            return Response({"error": True, "message": f"Error fetching payment from YooKassa: {str(e)}"},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        payment.status = yoo_payment.status
-        payment.save()
-
-        serializer = PaymentSerializer(payment)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @csrf_exempt
@@ -190,3 +206,38 @@ def webhook_view(request):
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
     else:
         return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+
+#
+# class FavouritesViewSet(viewsets.ModelViewSet):
+#     authentication_classes = [CookieJWTAuthentication, ]
+#     permission_classes = [IsAuthenticated]
+#     queryset = Favourites.objects.all()
+#     serializer_class = FavouritesSerializer
+#
+#     @action(detail=True, methods=['post'], url_path='add_item')
+#     def add_item(self, request, pk=None):
+#         print('ya zashel')
+#         favourites = Favourites.objects.get(user=request.user)
+#         product_id = pk
+#         try:
+#             product = ItemStock.objects.get(id=product_id)
+#         except Item.DoesNotExist:
+#             return Response({"error": True, "message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+#
+#         if FavouritesItem.objects.filter(favourites=favourites, product=product).exists():
+#             return Response({'error': True, 'message': 'Product already in favourites'}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         FavouritesItem.objects.create(favourites=favourites, product=product)
+#         return Response({'success': True, 'message': 'Product added to favourites'}, status=status.HTTP_201_CREATED)
+#
+#     @action(detail=True, methods=['post'])
+#     def remove_item(self, request, pk=None):
+#         favourites = Favourites.objects.get(user=request.user)
+#         product_id = pk
+#
+#         favourite_item = FavouritesItem.objects.filter(favourites=favourites, product=product).first()
+#         if favourite_item:
+#             favourite_item.delete()
+#             return Response({'success': True, 'message': 'Product removed from favourites'}, status=status.HTTP_204_NO_CONTENT)
+#
+#         return Response({'error': True, 'message': 'Product not in favourites'}, status=status.HTTP_400_BAD_REQUEST)
