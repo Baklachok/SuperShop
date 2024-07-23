@@ -249,3 +249,22 @@ def webhook_view(request):
 #             return Response({'success': True, 'message': 'Product removed from favourites'}, status=status.HTTP_204_NO_CONTENT)
 #
 #         return Response({'error': True, 'message': 'Product not in favourites'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PaymentsViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreatePaymentSerializer
+        return PaymentSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payment = serializer.save()
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED, headers=headers)
+
