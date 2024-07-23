@@ -26,17 +26,14 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ['telNo', 'name', 'password', 'passwordConfirmation']
 
     def validate(self, data):
-
         if data['password'] != data['passwordConfirmation']:
             raise ValidationError({'password': "Passwords do not match.",
                                    'passwordConfirmation': "Passwords do not match."})
         parsed_number = isMobile(data['telNo'], None)
         if not parsed_number:
             raise ValidationError({'telNo': "Invalid phone number."})
-
         if FrontendUser.objects.filter(telNo=data['telNo']).exists():
-            raise serializers.ValidationError({'telNo': ['user with this telNo already exists.']})
-
+            raise ValidationError({'telNo': ['user with this telNo already exists.']})
         return data
 
     def create(self, validated_data):
@@ -57,20 +54,20 @@ class MyTokenObtainSerializer(serializers.Serializer):
         data = super().validate(attrs)
         telNo = attrs.get('telNo')
         password = attrs.get('password')
-        if telNo and password:
-            user = authenticate(username=telNo, password=password)
-            if user:
-                refresh = RefreshToken.for_user(user)
-                UserRefreshToken.objects.create(
-                    user=user,
-                    token=str(refresh),
-                    expires_at=datetime.now() + SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
-                )
-                data['refresh'] = str(refresh)
-                data['access'] = str(refresh.access_token)
-                return data
-            else:
-                raise serializers.ValidationError("Unable to log in with provided credentials.")
-        else:
-            raise serializers.ValidationError("Must include 'username' and 'password")
+        if not telNo:
+            raise ValidationError({"telNo": "Must include 'telNo'."})
+        if not password:
+            raise ValidationError({"password": "Must include 'password'."})
+        user = authenticate(username=telNo, password=password)
+        if not user:
+            raise ValidationError({"telNo": "Invalid phone number."})
+        refresh = RefreshToken.for_user(user)
+        UserRefreshToken.objects.create(
+            user=user,
+            token=str(refresh),
+            expires_at=datetime.now() + SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
+        )
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
         return data
+
