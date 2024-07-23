@@ -64,6 +64,7 @@ class Payment(models.Model):
         PENDING = 'PENDING', gettext_lazy('Pending')
         SUCCEEDED = 'SUCCEEDED', gettext_lazy('Succeeded')
         CANCELED = 'CANCELED', gettext_lazy('Canceled')
+    user = models.ForeignKey(FrontendUser, on_delete=models.CASCADE)
     basket = models.ForeignKey(Basket, on_delete=models.CASCADE, related_name='payments')
     order_id = models.UUIDField(default=uuid.uuid4, editable=False)
     status = models.CharField(max_length=10, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)

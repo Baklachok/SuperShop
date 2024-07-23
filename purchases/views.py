@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 
 from api.models import Item, ItemStock, Color, Size
 from authentication.backends import CookieJWTAuthentication
+from orders.models import Order, OrderItem
 
 from .models import Basket, BasketItem, Payment, Favourites, FavouritesItem
 from .serializers import BasketSerializer, BasketItemSerializer, AddToBasketSerializer, PaymentSerializer, \
@@ -158,6 +159,7 @@ class CreatePaymentView(CreateAPIView):
 
         # Создаем платеж и возвращаем ответ
         payment = serializer.save()
+        order = Order.objects.create(user=user, status='created')
         payment_serializer = PaymentSerializer(payment)
         return Response(payment_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -175,7 +177,7 @@ def webhook_view(request):
             # Get payment ID from webhook
             payment_id = payload['object']['id']
             status = payload['object']['status']
-
+            print(payload)
             # Find the corresponding Payment object
             try:
                 payment = Payment.objects.get(yookassa_payment_id=payment_id)
@@ -183,10 +185,16 @@ def webhook_view(request):
 
                 if payment.status == Payment.PaymentStatus.SUCCEEDED:
                     basket_items = BasketItem.objects.filter(basket=payment.basket)
-
+                    order = Order.objects.get(user=payment.user)
+                    order.update_order_status("paid")
                     # Update stock quantities
                     for item in basket_items:
                         stock_item = ItemStock.objects.get(item=item.product.item, color=item.product.color, size=item.product.size)
+                        OrderItem.objects.create(
+                            order=order,
+                            product=stock_item,
+                            quantity=stock_item.quantity
+                        )
                         stock_item.quantity -= item.quantity
                         stock_item.save()
 
@@ -197,15 +205,15 @@ def webhook_view(request):
                     basket_items.delete()
 
                 payment.save()
-                return JsonResponse({'status': 'success'}, status=200)
+                return JsonResponse({'success': True}, status=200)
             except Payment.DoesNotExist:
-                return JsonResponse({'status': 'error', 'message': 'Payment not found'}, status=404)
+                return JsonResponse({'error': True, 'message': 'Payment not found'}, status=404)
 
         except json.JSONDecodeError as e:
             print("Error decoding JSON:", e)
-            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+            return JsonResponse({'error': True, 'message': 'Invalid JSON'}, status=400)
     else:
-        return JsonResponse({'status': 'error', 'message': 'Invalid method'}, status=405)
+        return JsonResponse({'error': True, 'message': 'Invalid method'}, status=405)
 
 #
 # class FavouritesViewSet(viewsets.ModelViewSet):

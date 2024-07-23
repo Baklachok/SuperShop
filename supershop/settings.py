@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'authentication',
     'purchases',
     'django_admin_inline_paginator',
+    'orders',
     'user_profile',
 ]
 
