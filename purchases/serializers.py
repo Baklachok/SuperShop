@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from authentication.models import FrontendUser
+from orders.models import Order
 from .models import Basket, BasketItem, Payment, Favourites, FavouritesItem
 from yookassa import Payment as YooKassaPayment
 
@@ -91,7 +92,6 @@ class CreatePaymentSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         basket = validated_data['basket_id']
-        print(validated_data)
         user = validated_data['user_id']
 
         amount = basket.total_cost
@@ -122,7 +122,8 @@ class CreatePaymentSerializer(serializers.Serializer):
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ['id', 'user', 'basket', 'amount', 'status', 'yookassa_payment_id', 'yookassa_confirmation_url',
+        fields = ['id', 'user', 'basket', 'amount', 'status', 'yookassa_payment_id',
+                  'yookassa_confirmation_url',
                   'created_at', 'updated_at']
         read_only_fields = ['id', 'status', 'yookassa_payment_id', 'yookassa_confirmation_url', 'created_at',
                             'updated_at']

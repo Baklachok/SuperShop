@@ -23,7 +23,6 @@ from .serializers import BasketSerializer, BasketItemSerializer, AddToBasketSeri
 from yookassa import Payment as YooKassaPayment
 
 
-
 class BasketViewSet(viewsets.ModelViewSet):
     authentication_classes = [CookieJWTAuthentication, ]
     permission_classes = [IsAuthenticated]
@@ -159,14 +158,13 @@ class CreatePaymentView(CreateAPIView):
 
         # Создаем платеж и возвращаем ответ
         payment = serializer.save()
-        order = Order.objects.create(user=user, status='created')
+        order = Order.objects.create(user=user, status='created', payment=payment)
         basket_items = BasketItem.objects.filter(basket=basket)
         for item in basket_items:
-            stock_item = ItemStock.objects.get(item=item.product.item, color=item.product.color, size=item.product.size)
             OrderItem.objects.create(
                 order=order,
-                product=stock_item,
-                quantity=stock_item.quantity
+                product=item.product,
+                quantity=item.quantity
             )
         payment_serializer = PaymentSerializer(payment)
         return Response(payment_serializer.data, status=status.HTTP_201_CREATED)
@@ -190,22 +188,17 @@ def webhook_view(request):
             try:
                 payment = Payment.objects.get(yookassa_payment_id=payment_id)
                 payment.status = status.upper()  # Assuming your PaymentStatus choices are in uppercase
-                order = Order.objects.get(user=payment.user)
-                order.status = "paid"
-                order.save()
 
                 if payment.status == Payment.PaymentStatus.SUCCEEDED:
                     basket_items = BasketItem.objects.filter(basket=payment.basket)
-                    order = Order.objects.get(user=payment.user)
-                    order.update_order_status("paid")
+                    order = Order.objects.get(user=payment.user, payment=payment)
+                    order.status = "paid"
+                    order.save()
+
                     # Update stock quantities
                     for item in basket_items:
-                        stock_item = ItemStock.objects.get(item=item.product.item, color=item.product.color, size=item.product.size)
-                        OrderItem.objects.create(
-                            order=order,
-                            product=stock_item,
-                            quantity=stock_item.quantity
-                        )
+                        stock_item = ItemStock.objects.get(item=item.product.item, color=item.product.color,
+                                                           size=item.product.size)
                         stock_item.quantity -= item.quantity
                         stock_item.save()
 
@@ -247,3 +240,20 @@ class FavouritesViewSet(viewsets.ModelViewSet):
     def add_item(self, request):
         favourites, _ = Favourites.objects.get_or_create(user=request.user)
         product_id = request.data.get('product_id')
+
+
+class PaymentsViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreatePaymentSerializer
+        return PaymentSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payment = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED, headers=headers)

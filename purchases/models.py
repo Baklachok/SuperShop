@@ -64,6 +64,7 @@ class Payment(models.Model):
         PENDING = 'PENDING', gettext_lazy('Pending')
         SUCCEEDED = 'SUCCEEDED', gettext_lazy('Succeeded')
         CANCELED = 'CANCELED', gettext_lazy('Canceled')
+
     user = models.ForeignKey(FrontendUser, on_delete=models.CASCADE)
     basket = models.ForeignKey(Basket, on_delete=models.CASCADE, related_name='payments')
     order_id = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -75,7 +76,8 @@ class Payment(models.Model):
     yookassa_confirmation_url = models.URLField(max_length=200, blank=True, null=True)
 
     def __str__(self):
-        return self.order_id
+        return str(self.order_id)
+
 
 class Favourites(models.Model):
     user = models.ForeignKey(FrontendUser, on_delete=models.CASCADE)
