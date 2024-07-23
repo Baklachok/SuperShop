@@ -1,12 +1,9 @@
 # models.py
 
-
-import jwt
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.core.exceptions import ValidationError
 from django.db import models
-import datetime
 
-from supershop import settings
 
 
 class AdminUserManager(BaseUserManager):
@@ -35,6 +32,7 @@ class FrontendUserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
         return user
+
 
 
 class AdminUser(AbstractBaseUser, PermissionsMixin):
@@ -97,6 +95,18 @@ class FrontendUser(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'telNo'
     REQUIRED_FIELDS = []
+
+    def validate_unique(self, exclude=None):
+        print('validate unique')
+        try:
+            super(FrontendUser, self).validate_unique(exclude=exclude)
+        except ValidationError as e:
+            error_dict = e.error_dict
+            print('yasdes')
+            print(error_dict)
+            if 'telNo' in error_dict:
+                error_dict['telNo'] = ['user with this telNo already exists.']
+            raise ValidationError(error_dict)
 
     def __str__(self):
         """ Строковое представление модели (отображается в консоли) """

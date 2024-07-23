@@ -84,28 +84,6 @@ class FavouritesSerializer(serializers.ModelSerializer):
         model = Favourites
         fields = ['id', 'user', 'items', 'created_at', 'updated_at']
 
-    # def create(self, validated_data):
-    #     items_data = validated_data.pop('items')
-    #     basket = Basket.objects.create(**validated_data)
-    #     for item_data in items_data:
-    #         BasketItem.objects.create(basket=basket, **item_data)
-    #     return basket
-    #
-    # def update(self, instance, validated_data):
-    #     items_data = validated_data.pop('items')
-    #     instance.user = validated_data.get('user', instance.user)
-    #     instance.save()
-    #
-    #     for item_data in items_data:
-    #         item = item_data.get('item')
-    #         quantity = item_data.get('quantity')
-    #         basket_item, created = BasketItem.objects.get_or_create(basket=instance, item=item)
-    #         if not created:
-    #             basket_item.quantity = quantity
-    #             basket_item.save()
-    #
-    #     return instance
-
 
 class CreatePaymentSerializer(serializers.Serializer):
     basket_id = serializers.PrimaryKeyRelatedField(queryset=Basket.objects.all())

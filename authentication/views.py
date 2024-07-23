@@ -15,13 +15,17 @@ class RegistrationAPIView(generics.CreateAPIView):
     queryset = FrontendUser.objects.all()
     permission_classes = [AllowAny]
     serializer_class = RegistrationSerializer
-
+    print('1')
     def create(self, request, *args, **kwargs):
+
         serializer = self.get_serializer(data=request.data)
+
         if serializer.is_valid():
+            print('tut')
             user = serializer.save()
             response = Response({"success": True}, status=status.HTTP_201_CREATED)
         else:
+            print(serializer.errors)
             response = Response({"error": ["True"], "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         # Set tokens in cookies
