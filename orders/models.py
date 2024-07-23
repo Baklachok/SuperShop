@@ -37,6 +37,4 @@ class OrderItem(models.Model):
     def total_price(self):
         return self.product.item.price_with_discount * self.quantity
 
-    def update_order_status(self, new_status):
-        self.status = new_status
-        self.save()
+
