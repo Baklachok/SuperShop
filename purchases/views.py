@@ -160,6 +160,14 @@ class CreatePaymentView(CreateAPIView):
         # Создаем платеж и возвращаем ответ
         payment = serializer.save()
         order = Order.objects.create(user=user, status='created')
+        basket_items = BasketItem.objects.filter(basket=basket)
+        for item in basket_items:
+            stock_item = ItemStock.objects.get(item=item.product.item, color=item.product.color, size=item.product.size)
+            OrderItem.objects.create(
+                order=order,
+                product=stock_item,
+                quantity=stock_item.quantity
+            )
         payment_serializer = PaymentSerializer(payment)
         return Response(payment_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -182,6 +190,9 @@ def webhook_view(request):
             try:
                 payment = Payment.objects.get(yookassa_payment_id=payment_id)
                 payment.status = status.upper()  # Assuming your PaymentStatus choices are in uppercase
+                order = Order.objects.get(user=payment.user)
+                order.status = "paid"
+                order.save()
 
                 if payment.status == Payment.PaymentStatus.SUCCEEDED:
                     basket_items = BasketItem.objects.filter(basket=payment.basket)
@@ -215,56 +226,24 @@ def webhook_view(request):
     else:
         return JsonResponse({'error': True, 'message': 'Invalid method'}, status=405)
 
-#
-# class FavouritesViewSet(viewsets.ModelViewSet):
-#     authentication_classes = [CookieJWTAuthentication, ]
-#     permission_classes = [IsAuthenticated]
-#     queryset = Favourites.objects.all()
-#     serializer_class = FavouritesSerializer
-#
-#     @action(detail=True, methods=['post'], url_path='add_item')
-#     def add_item(self, request, pk=None):
-#         print('ya zashel')
-#         favourites = Favourites.objects.get(user=request.user)
-#         product_id = pk
-#         try:
-#             product = ItemStock.objects.get(id=product_id)
-#         except Item.DoesNotExist:
-#             return Response({"error": True, "message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
-#
-#         if FavouritesItem.objects.filter(favourites=favourites, product=product).exists():
-#             return Response({'error': True, 'message': 'Product already in favourites'}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         FavouritesItem.objects.create(favourites=favourites, product=product)
-#         return Response({'success': True, 'message': 'Product added to favourites'}, status=status.HTTP_201_CREATED)
-#
-#     @action(detail=True, methods=['post'])
-#     def remove_item(self, request, pk=None):
-#         favourites = Favourites.objects.get(user=request.user)
-#         product_id = pk
-#
-#         favourite_item = FavouritesItem.objects.filter(favourites=favourites, product=product).first()
-#         if favourite_item:
-#             favourite_item.delete()
-#             return Response({'success': True, 'message': 'Product removed from favourites'}, status=status.HTTP_204_NO_CONTENT)
-#
-#         return Response({'error': True, 'message': 'Product not in favourites'}, status=status.HTTP_400_BAD_REQUEST)
 
+class FavouritesViewSet(viewsets.ModelViewSet):
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = Favourites.objects.all()
+    serializer_class = FavouritesSerializer
 
-class PaymentsViewSet(viewsets.ModelViewSet):
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return CreatePaymentSerializer
-        return PaymentSerializer
+    def get_queryset(self):
+        # Ensure users can only access their own favourites
+        return Favourites.objects.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        payment = serializer.save()
+        # Check if the user already has a Favourites object
+        favourites, created = Favourites.objects.get_or_create(user=request.user)
+        serializer = self.get_serializer(favourites)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-        headers = self.get_success_headers(serializer.data)
-        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED, headers=headers)
-
+    @action(detail=False, methods=['post'], url_path='add_item')
+    def add_item(self, request):
+        favourites, _ = Favourites.objects.get_or_create(user=request.user)
+        product_id = request.data.get('product_id')
