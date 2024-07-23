@@ -247,3 +247,20 @@ class FavouritesViewSet(viewsets.ModelViewSet):
     def add_item(self, request):
         favourites, _ = Favourites.objects.get_or_create(user=request.user)
         product_id = request.data.get('product_id')
+
+
+class PaymentsViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreatePaymentSerializer
+        return PaymentSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        payment = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED, headers=headers)
