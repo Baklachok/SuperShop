@@ -17,6 +17,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('', include(categories_router.urls)),
     path('stock_item/<int:item_id>/', StockItemView.as_view(), name='stock-item-detail'),
+    path('items/max_price/', ItemViewSet.as_view({'get': 'max_price'}), name='item-max-price'),
 ]
 
 urlpatterns += [
