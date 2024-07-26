@@ -12,7 +12,7 @@ class AddressSerializer(serializers.ModelSerializer):
 class ReviewPhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReviewPhoto
-        fields = ['id', 'photo']
+        fields = '__all__'
 
 class ReviewSerializer(serializers.ModelSerializer):
     photos = ReviewPhotoSerializer(many=True, read_only=True)

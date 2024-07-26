@@ -3,8 +3,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 
 from authentication.backends import CookieJWTAuthentication
-from user_profile.models import Address, Review
-from user_profile.serializers import AddressSerializer, ReviewSerializer
+from user_profile.models import Address, Review, ReviewPhoto
+from user_profile.serializers import AddressSerializer, ReviewSerializer, ReviewPhotoSerializer
 
 
 class AddressViewSet(viewsets.ModelViewSet):
@@ -44,3 +44,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+class ReviewPhotoViewSet(viewsets.ModelViewSet):
+    queryset = ReviewPhoto.objects.all()
+    serializer_class = ReviewPhotoSerializer
+
