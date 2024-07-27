@@ -21,7 +21,9 @@ class Review(models.Model):
     user = models.ForeignKey(FrontendUser, on_delete=models.CASCADE, related_name='review')
     item = models.ForeignKey(Item, related_name='review', on_delete=models.CASCADE)
     grade = models.PositiveSmallIntegerField(validators=[MinValueValidator(0), MaxValueValidator(5)])
-    text = models.TextField()
+    comments = models.TextField(blank=True, null=True)
+    advantages = models.TextField(blank=True, null=True)
+    disadvantages = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f'Review by {self.user} for {self.item}'
