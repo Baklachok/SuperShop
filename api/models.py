@@ -1,7 +1,7 @@
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models, transaction
 from autoslug import AutoSlugField
-from django.db.models import Sum
+from django.db.models import Sum, Avg
 from django.db.models.signals import post_delete, pre_save, post_save
 from django.dispatch import receiver
 from django import forms
@@ -103,6 +103,11 @@ class Item(models.Model):
                 for photo in self.item_photos.all()
             ])
         )
+
+    def update_rating(self):
+        avg_rating = self.review.aggregate(average=Avg('grade'))['average']
+        self.rating = avg_rating if avg_rating else 0
+        self.save(update_fields=['rating'])
 
 
 class Photo(models.Model):
