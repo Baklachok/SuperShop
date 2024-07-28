@@ -88,35 +88,7 @@ class FavouritesSerializer(serializers.ModelSerializer):
 
 class CreatePaymentSerializer(serializers.Serializer):
     basket_id = serializers.PrimaryKeyRelatedField(queryset=Basket.objects.all())
-    user_id = serializers.PrimaryKeyRelatedField(queryset=FrontendUser.objects.all())
 
-    def create(self, validated_data):
-        basket = validated_data['basket_id']
-        user = validated_data['user_id']
-
-        amount = basket.total_cost
-        payment = Payment.objects.create(basket=basket, amount=amount, user=user)
-
-        # Создание платежа через YooKassa
-        payment_request = {
-            "amount": {
-                "value": str(amount),
-                "currency": "RUB"
-            },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": "http://127.0.0.1:3000/cart"
-            },
-            "capture": True,
-            "description": f"Payment for basket {basket.id}"
-        }
-
-        yoo_payment = YooKassaPayment.create(payment_request)
-        payment.yookassa_payment_id = yoo_payment.id
-        payment.yookassa_confirmation_url = yoo_payment.confirmation.confirmation_url
-        payment.save()
-
-        return payment
 
 
 class PaymentSerializer(serializers.ModelSerializer):
