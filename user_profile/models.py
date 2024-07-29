@@ -24,6 +24,7 @@ class Review(models.Model):
     comments = models.TextField(blank=True, null=True)
     advantages = models.TextField(blank=True, null=True)
     disadvantages = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f'Review by {self.user} for {self.item}'

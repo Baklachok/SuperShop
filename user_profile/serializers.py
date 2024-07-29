@@ -23,15 +23,19 @@ class ReviewPhotoSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    user_photo = serializers.ImageField(source='user.profile_picture', read_only=True)
     photos = ReviewPhotoSerializer(many=True, read_only=True)
     uploaded_photos = serializers.ListField(
         child=serializers.ImageField(max_length=1000000, allow_empty_file=False, use_url=False),
         write_only=True, max_length=5, required=False
     )
+    created_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Review
-        fields = ['item', 'grade', 'comments', 'photos', 'uploaded_photos', 'advantages', 'disadvantages']
+        fields = ['item', 'grade', 'comments', 'photos', 'uploaded_photos', 'advantages', 'disadvantages', 'user_name',
+                  'user_photo', 'created_at']
 
     def create(self, validated_data):
         uploaded_photos = validated_data.pop('uploaded_photos', [])
