@@ -121,3 +121,12 @@ class UserRefreshToken(models.Model):
 
     def __str__(self):
         return self.token
+
+
+class TelNoCode(models.Model):
+    telNo = models.CharField(unique=True)
+    code = models.IntegerField()
+    expires = models.DateTimeField(auto_now_add=True)
+
+
+

@@ -143,21 +143,38 @@ class CreatePaymentView(CreateAPIView):
     serializer_class = CreatePaymentSerializer
 
     def post(self, request, *args, **kwargs):
+
         serializer = CreatePaymentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         # Получаем данные из валидированного сериализатора
         basket_id = serializer.validated_data['basket_id']
         user = request.user
-
         try:
             basket = Basket.objects.get(id=basket_id.id, user=user)
         except Basket.DoesNotExist:
             return Response({"detail": "Basket not found or does not belong to this user."},
                             status=status.HTTP_404_NOT_FOUND)
 
+        amount = basket.total_cost
+        payment = Payment.objects.create(basket=basket, amount=amount, user=user)
+        # Создание платежа через YooKassa
+        payment_request = {
+            "amount": {
+                "value": str(amount),
+                "currency": "RUB"
+            },
+            "confirmation": {
+                "type": "redirect",
+                "return_url": "http://127.0.0.1:3000/cart"
+            },
+            "capture": True,
+            "description": f"Payment for basket {basket.id}"
+        }
+        yoo_payment = YooKassaPayment.create(payment_request)
+        payment.yookassa_payment_id = yoo_payment.id
+        payment.yookassa_confirmation_url = yoo_payment.confirmation.confirmation_url
         # Создаем платеж и возвращаем ответ
-        payment = serializer.save()
+        payment.save()
         order = Order.objects.create(user=user, status='created', payment=payment)
         basket_items = BasketItem.objects.filter(basket=basket)
         for item in basket_items:

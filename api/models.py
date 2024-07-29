@@ -258,3 +258,5 @@ def update_item_general_photos_on_save(sender, instance, **kwargs):
                     if instance.general_photo_two:
                         instance.general_photo_two.is_general_two = True
                         instance.general_photo_two.save(update_fields=['is_general_two'])
+
+

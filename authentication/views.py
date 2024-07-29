@@ -8,24 +8,20 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from supershop.settings import SIMPLE_JWT
 from .models import FrontendUser, UserRefreshToken
-from .serializers import RegistrationSerializer, MyTokenObtainSerializer
+from .serializers import RegistrationSerializer, MyTokenObtainSerializer, ResetPasswordSerializer, NewPasswordSerializer
 
 
 class RegistrationAPIView(generics.CreateAPIView):
     queryset = FrontendUser.objects.all()
     permission_classes = [AllowAny]
     serializer_class = RegistrationSerializer
-    print('1')
+
     def create(self, request, *args, **kwargs):
-
         serializer = self.get_serializer(data=request.data)
-
         if serializer.is_valid():
-            print('tut')
             user = serializer.save()
             response = Response({"success": True}, status=status.HTTP_201_CREATED)
         else:
-            print(serializer.errors)
             response = Response({"error": ["True"], "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         # Set tokens in cookies
@@ -83,6 +79,7 @@ class TokenRefreshView(generics.GenericAPIView):
                     httponly=True,
                     secure=True,
                     samesite='Lax',
+                    expires=timezone.now() + SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
                 )
                 return response
             except UserRefreshToken.DoesNotExist:
@@ -107,3 +104,56 @@ class LogoutView(generics.GenericAPIView):
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
         return response
+
+
+class ResetPasswordView(generics.GenericAPIView):
+    serializer_class = ResetPasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            phone = request.data.get('telNo')
+            response = Response({"success": True}, status=status.HTTP_200_OK)
+            try:
+                user = FrontendUser.objects.get(telNo=phone)
+            except FrontendUser.DoesNotExist:
+                return Response({"error": "True", "message": "User does not exist"},)
+            temporary_token = str(RefreshToken.for_user(user).access_token)
+            return Response({"success": True, 'token': temporary_token}, status=status.HTTP_200_OK)
+        else:
+            response = Response({"error": ["True"], "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return response
+
+
+class NewPasswordView(generics.GenericAPIView):
+    serializer_class = NewPasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            response = Response({"success": True}, status=status.HTTP_200_OK)
+            response_data = serializer.validated_data
+            access_token = request.data.get('token')
+            print(response_data)
+            print(request.data)
+            print(access_token)
+            print("access_token")
+            if access_token:
+                try:
+                    token = AccessToken(access_token)
+                    user_id = token['user_id']
+
+                    try:
+                        user = FrontendUser.objects.get(pk=user_id)
+                        print('user est')
+                    except FrontendUser.DoesNotExist:
+                        return Response({'error': True, 'message': 'User does not exist'}, status=status.HTTP_404_NOT_FOUND)
+                    user.set_password(response_data['password'])
+                    print('user set')
+                    user.save()
+                    return Response({'success': True}, status=status.HTTP_200_OK)
+                except Exception as e:
+                    return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                response = Response({"error": "True", "message": 'no token'}, status=status.HTTP_400_BAD_REQUEST)
+                return response

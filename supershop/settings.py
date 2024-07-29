@@ -196,5 +196,12 @@ SIMPLE_JWT = {
     'JTI_CLAIM': 'jti',
 }
 
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",  # если вы тестируете локально
+]
+
 Configuration.account_id = os.getenv('YOOKASSA_ID')
 Configuration.secret_key = os.getenv('YOOKASSA_KEY')
