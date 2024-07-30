@@ -65,13 +65,14 @@ class FavouritesItemSerializer(serializers.ModelSerializer):
     item_id = serializers.IntegerField(source='product.item.id', read_only=True)
     product_price_with_discount = serializers.DecimalField(source='product.item.price_with_discount', max_digits=10,
                                                            decimal_places=2, read_only=True)
-    product_image = serializers.ImageField(source='product.item.general_photo_one.photo.photo', read_only=True)
+    product_image_1 = serializers.ImageField(source='product.item.general_photo_one.photo.photo', read_only=True)
+    product_image_2 = serializers.ImageField(source='product.item.general_photo_two.photo.photo', read_only=True)
     category_slug = serializers.SerializerMethodField()
 
     class Meta:
         model = FavouritesItem
         fields = ['id', 'product', 'product_name', 'item_id', 'category_slug', 'product_price',
-                  'product_price_with_discount', 'product_image']
+                  'product_price_with_discount', 'product_image_1', 'product_image_2']
 
     def get_category_slug(self, obj):
         categories = obj.product.item.categories.all()
