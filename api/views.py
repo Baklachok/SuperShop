@@ -32,10 +32,10 @@ class ItemViewSet(viewsets.ModelViewSet):
         sort = self.request.query_params.get('sort')
 
         if min_price is not None:
-            queryset = queryset.filter(price__gte=min_price)
+            queryset = queryset.filter(price_with_discount__gte=min_price)
 
         if max_price is not None:
-            queryset = queryset.filter(price__lte=max_price)
+            queryset = queryset.filter(price_with_discount__lte=max_price)
 
         if with_discount:
             queryset = queryset.filter(discount__gt=0)
@@ -80,7 +80,7 @@ class ItemViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def max_price(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
-        max_price = queryset.aggregate(Max('price'))['price__max']
+        max_price = queryset.aggregate(Max('price_with_discount'))['price_with_discount__max']
         return Response({'max_price': max_price})
 
 class CategoryViewSet(viewsets.ModelViewSet):
