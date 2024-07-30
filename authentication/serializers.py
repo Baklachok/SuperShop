@@ -83,6 +83,7 @@ class MyTokenObtainSerializer(serializers.Serializer):
                     print("Ваш номер подтвержден!")
                 else:
                     print("Неверный код.")
+                    raise ValidationError({"code": "dosn't match."})
             else:
                 print('nachali otpravku')
                 send_verification_code(telNo)

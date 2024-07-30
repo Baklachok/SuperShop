@@ -83,7 +83,7 @@ class FavouritesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Favourites
-        fields = ['id', 'user', 'items', 'created_at', 'updated_at']
+        fields = ['id', 'items', 'created_at', 'updated_at']
 
 
 class CreatePaymentSerializer(serializers.Serializer):

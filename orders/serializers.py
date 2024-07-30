@@ -4,7 +4,7 @@ from .models import Order, OrderItem
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.item.name')
-    item_photo = serializers.ImageField(source='product.item.general_photo_one.photo.photo')
+    item_photo = serializers.SerializerMethodField()
     item_id = serializers.ReadOnlyField(source='product.item.id')
     total_price = serializers.ReadOnlyField()
     category_slug = serializers.SerializerMethodField()
@@ -14,6 +14,12 @@ class OrderItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'order', 'product', 'item_photo', 'item_id', 'category_slug', 'product_name', 'quantity',
                   'total_price']
         read_only_fields = ['id', 'order', 'total_price']
+
+    def get_item_photo(self, obj):
+        photo_instance = obj.product.item.general_photo_one
+        if photo_instance and photo_instance.photo:
+            return photo_instance.photo.photo.url
+        return None
 
     def get_category_slug(self, obj):
         categories = obj.product.item.categories.all()

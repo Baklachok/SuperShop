@@ -247,16 +247,29 @@ class FavouritesViewSet(viewsets.ModelViewSet):
         # Ensure users can only access their own favourites
         return Favourites.objects.filter(user=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        # Check if the user already has a Favourites object
-        favourites, created = Favourites.objects.get_or_create(user=request.user)
-        serializer = self.get_serializer(favourites)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    # def create(self, request, *args, **kwargs):
+    #     # Check if the user already has a Favourites object
+    #     favourites, created = Favourites.objects.get_or_create(user=request.user)
+    #     serializer = self.get_serializer(favourites)
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='add_item')
     def add_item(self, request):
-        favourites, _ = Favourites.objects.get_or_create(user=request.user)
+        print(request.user)
         product_id = request.data.get('product_id')
+        try:
+            product = ItemStock.objects.get(id=product_id)
+        except ItemStock.DoesNotExist:
+            return Response({"error": True, "message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        favourites, created = Favourites.objects.get_or_create(user=request.user)
+        print(favourites)
+        if FavouritesItem.objects.filter(favourites=favourites, product=product).exists():
+            return Response({'error': True, 'message': 'Product already in favourites'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        FavouritesItem.objects.create(favourites=favourites, product=product)
+        return Response({'success': True, 'message': 'Product added to favourites'}, status=status.HTTP_201_CREATED)
 
 
 class PaymentsViewSet(viewsets.ModelViewSet):
