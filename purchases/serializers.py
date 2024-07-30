@@ -18,12 +18,13 @@ class BasketItemSerializer(serializers.ModelSerializer):
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     in_stock = serializers.BooleanField(read_only=True)
     category_slug = serializers.SerializerMethodField()
+    max_quantity = serializers.IntegerField(source='product.quantity', read_only=True)
 
     class Meta:
         model = BasketItem
         fields = ['id', 'product', 'product_name', 'item_id', 'category_slug', 'product_price',
                   'product_price_with_discount',
-                  'product_image', 'color', 'size', 'quantity', 'total_price', 'in_stock']
+                  'product_image', 'color', 'size', 'quantity', 'total_price', 'in_stock', 'max_quantity']
 
     def get_category_slug(self, obj):
         categories = obj.product.item.categories.all()
