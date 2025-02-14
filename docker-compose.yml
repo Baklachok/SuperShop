@@ -1,0 +1,75 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5  
+  backend:
+    image: baklachok/super_shop:latest
+    ports:
+      - '8000:8000'
+    # volumes:
+    #   - ../cms:/usr/app
+    env_file: .env
+    environment:
+      # APP_KEYS: ${APP_KEYS}
+      # API_TOKEN_SALT: ${API_TOKEN_SALT}
+      # ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      # TRANSFER_TOKEN_SALT: ${TRANSFER_TOKEN_SALT}
+      DATABASE_CLIENT: ${DATABASE_CLIENT}
+      DB_HOST: db
+      DB_SSL: "false"
+      DB_PORT: ${DATABASE_PORT}
+      DB_NAME: ${DATABASE_NAME}
+      DB_USER: ${DATABASE_USERNAME}
+      DB_PASSWORD: ${DATABASE_PASSWORD}
+      # JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: ${NODE_ENV}
+    networks:
+      - net
+    depends_on:
+      db:
+        condition: service_healthy
+  frontend:
+    image: darkmen203/super_shop_frontend:latest
+    env_file: .env
+    ports:
+      - '3000:3000'
+    # volumes:
+    #   - ../front-end:/usr/app
+    networks:
+      - net
+    depends_on:
+      - backend
+
+  ngrok-backend:
+    image: wernight/ngrok
+    command: ngrok http --domain=wondrous-largely-dogfish.ngrok-free.app backend:8000 --authtoken ${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - backend
+    networks:
+      - net
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN}
+
+volumes:
+  pgdata:
+
+networks:
+  net:
