@@ -167,8 +167,8 @@ class Size(models.Model):
 
 class ItemStock(models.Model):
     item = models.ForeignKey(Item, related_name='stocks', on_delete=models.CASCADE)
-    color = models.ForeignKey(Color, on_delete=models.CASCADE)
-    size = models.ForeignKey(Size, on_delete=models.CASCADE)
+    color = models.ForeignKey(Color, on_delete=models.CASCADE, null=True, blank=True)
+    size = models.ForeignKey(Size, on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=0)
     _deleting = False  # Внутренний флаг для предотвращения рекурсивного удаления
 
