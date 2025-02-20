@@ -38,50 +38,53 @@ class MyTokenObtainPairView(TokenObtainPairView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             response_data = serializer.validated_data
-            response = Response({"success": True}, status=status.HTTP_201_CREATED)
+
+            response = Response(
+                {
+                    "success": True,
+                    "access": response_data["access"],
+                    "refresh": response_data["refresh"],
+                },
+                status=status.HTTP_200_OK,  # Должен быть 200 OK, а не 201 CREATED
+            )
+
             # Set tokens in cookies
-            access_token_expiry = timezone.now() + SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
-            refresh_token_expiry = timezone.now() + SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
+            access_token_expiry = timezone.now() + SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"]
+            refresh_token_expiry = timezone.now() + SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"]
 
-            response.set_cookie('refresh_token', response_data['refresh'], httponly=True,
-                                expires=refresh_token_expiry)
-            response.set_cookie('access_token', response_data['access'], httponly=True,
-                                expires=access_token_expiry)
-        else:
-            response = Response({"error": "True", "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            response.set_cookie(
+                "refresh_token", response_data["refresh"], httponly=True, expires=refresh_token_expiry
+            )
+            response.set_cookie(
+                "access_token", response_data["access"], httponly=True, expires=access_token_expiry
+            )
 
-        return response
+            return response
+
+        return Response(
+            {"error": "True", "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 class TokenRefreshView(generics.GenericAPIView):
-    def get(self, request):
+    def post(self, request):
         access_token = request.COOKIES.get('access_token')
         refresh_token = request.COOKIES.get('refresh_token')
-        if access_token:
-            try:
-                AccessToken(access_token)
-                return Response({'success': True}, status=status.HTTP_200_OK)
-            except Exception as e:
-                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         if refresh_token:
             try:
-
                 stored_token = UserRefreshToken.objects.get(token=refresh_token)
                 if stored_token.expires_at < timezone.now():
                     return Response({'error': True, 'message': 'Refresh token expired'},
                                     status=status.HTTP_401_UNAUTHORIZED)
                 new_access_token = RefreshToken(refresh_token).access_token
-                response = Response({'access': 'created'}, status=status.HTTP_200_OK)
-                response.set_cookie(
-                    key='access_token',
-                    value=str(new_access_token),
-                    httponly=True,
-                    secure=True,
-                    samesite='Lax',
-                    expires=timezone.now() + SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
-                )
-                return response
+                
+                # Возвращаем access token явно
+                return Response({
+                    'success': True,
+                    'access': str(new_access_token),
+                }, status=status.HTTP_200_OK)
+
             except UserRefreshToken.DoesNotExist:
                 return Response({'error': True, 'message': 'Invalid refresh token'},
                                 status=status.HTTP_401_UNAUTHORIZED)
