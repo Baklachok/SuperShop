@@ -13,6 +13,7 @@ class OrdersViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
         order = serializer.save()
 
         headers = self.get_success_headers(serializer.data)
