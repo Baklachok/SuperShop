@@ -1,3 +1,4 @@
+import logging
 from rest_framework import serializers
 
 from authentication.models import FrontendUser
@@ -5,6 +6,8 @@ from orders.models import Order
 from .models import Basket, BasketItem, Payment, Favourites, FavouritesItem
 from yookassa import Payment as YooKassaPayment
 
+
+logger = logging.getLogger(__name__)
 
 class BasketItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.item.name', read_only=True)
@@ -90,7 +93,30 @@ class FavouritesSerializer(serializers.ModelSerializer):
 
 class CreatePaymentSerializer(serializers.Serializer):
     basket_id = serializers.PrimaryKeyRelatedField(queryset=Basket.objects.all())
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
 
+    def create(self, validated_data):
+        basket = validated_data["basket_id"]
+        user = self.context["request"].user
+
+        logger.info(
+            "Создание платежа: пользователь=%s, корзина_id=%s, сумма=%s",
+            user, basket.id, validated_data["amount"]
+        )
+
+        try:
+            payment = Payment.objects.create(
+                user=user,
+                basket=basket,
+                amount=validated_data["amount"],
+                status="created",
+            )
+            logger.info("Платеж успешно создан: %s", payment)
+        except Exception as e:
+            logger.error("Ошибка при создании платежа: %s", e)
+            raise
+
+        return payment
 
 
 class PaymentSerializer(serializers.ModelSerializer):
