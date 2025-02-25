@@ -47,7 +47,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         uploaded_photos = validated_data.pop('uploaded_photos', None)
         instance.grade = validated_data.get('grade', instance.grade)
-        instance.text = validated_data.get('text', instance.text)
+        instance.comments = validated_data.get('comments', instance.comments)
         instance.save()
 
         if uploaded_photos:
